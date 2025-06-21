@@ -1,0 +1,60 @@
+<!-- prettier-ignore -->
+{% extends 'base.html' %}
+{% block title %}予想を投稿{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold text-blue-600 mb-4">予想を投稿</h1>
+
+<form method="POST" class="space-y-4">
+  {% csrf_token %} {{ form.as_p }}
+  <button
+    type="submit"
+    class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+  >
+    投稿する
+  </button>
+</form>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const raceSelect = document.getElementById("id_race");
+    const firstSelect = document.getElementById("id_first_position");
+    const secondSelect = document.getElementById("id_second_position");
+    const thirdSelect = document.getElementById("id_third_position");
+
+    raceSelect.addEventListener("change", function () {
+      const raceId = this.value;
+      if (!raceId) return;
+
+      fetch(`/api/horses/?race_id=${raceId}`)
+        .then((response) => response.json())
+        .then((data) => {
+          [firstSelect, secondSelect, thirdSelect].forEach((select) => {
+            // 中身を初期化
+            select.innerHTML = "";
+            // 初期の空オプション
+            const emptyOption = document.createElement("option");
+            emptyOption.value = "";
+            emptyOption.textContent = "---------";
+            select.appendChild(emptyOption);
+
+            // 馬データを追加
+            data.forEach((horse) => {
+              const option = document.createElement("option");
+              option.value = horse.id;
+              option.textContent = horse.name;
+              select.appendChild(option);
+            });
+          });
+        });
+    });
+  });
+</script>
+
+<a
+  href="{% url 'prediction_list' %}"
+  class="text-sm text-blue-500 mt-4 inline-block"
+>
+  → 予想一覧へ
+</a>
+{% endblock %}

@@ -1,0 +1,53 @@
+<!-- prettier-ignore -->
+{% extends 'base.html' %}
+
+{% block title %}予想一覧{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold text-blue-600 mb-6">My予想一覧</h1>
+
+{% if predictions %}
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+  {% for p in predictions %}
+  <div class="bg-white border rounded-xl shadow-md p-4">
+    <div class="flex justify-between items-center mb-2">
+      <h2 class="text-lg font-semibold text-gray-800">{{ p.race.name }}</h2>
+      <span class="text-sm text-gray-500">
+        {{ p.created_at|date:"Y年m月d日 H:i" }}
+      </span>
+    </div>
+
+    <p class="text-sm text-gray-600 mb-1">👤 {{ p.user.username }}</p>
+
+    <ul class="text-sm text-gray-700 space-y-1 mb-4">
+      <li>🥇 1着：<strong>{{ p.first_position.name }}</strong></li>
+      <li>🥈 2着：<strong>{{ p.second_position.name }}</strong></li>
+      <li>🥉 3着：<strong>{{ p.third_position.name }}</strong></li>
+    </ul>
+
+    {% if p.user == request.user %}
+    <form
+      action="{% url 'delete_prediction' p.pk %}"
+      method="POST"
+      onsubmit="return confirm('本当に削除しますか？');"
+    >
+      {% csrf_token %}
+      <button type="submit" class="text-sm text-red-500 hover:underline">
+        🗑️ 削除
+      </button>
+    </form>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p>まだ予想がありません。</p>
+{% endif %}
+
+<a
+  href="{% url 'submit_prediction' %}"
+  class="text-sm text-blue-500 mt-6 inline-block"
+>
+  ← 予想を投稿する
+</a>
+{% endblock %}
