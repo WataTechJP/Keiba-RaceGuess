@@ -1,0 +1,30 @@
+<!-- prettier-ignore -->
+{% extends "base.html" %}
+{% block title %}ユーザー一覧{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">ユーザー一覧</h1>
+
+<ul class="space-y-4">
+  {% for u in users %}
+  <li class="flex items-center justify-between border p-4 rounded">
+    <span>{{ u.username }}</span>
+    {% if u.id in followed_users %}
+    <form method="POST" action="{% url 'unfollow_user' u.id %}">
+      {% csrf_token %}
+      <button class="text-red-500 hover:underline">フォロー解除</button>
+    </form>
+    {% else %}
+    <form method="POST" action="{% url 'follow_user' u.id %}">
+      {% csrf_token %}
+      <button class="text-blue-500 hover:underline">フォローする</button>
+    </form>
+    {% endif %}
+  </li>
+  {% endfor %}
+</ul>
+
+<a href="{% url 'timeline' %}" class="text-sm text-gray-500 mt-4 block"
+  >← タイムラインへ戻る</a
+>
+{% endblock %}

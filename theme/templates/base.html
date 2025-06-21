@@ -1,0 +1,51 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>{% block title %}Keiba App{% endblock %}</title>
+    <link href="{% static 'css/output.css' %}" rel="stylesheet" />
+  </head>
+  <body class="bg-gray-100 text-gray-900">
+    <div class="max-w-3xl mx-auto p-6">
+      <!-- ✅ ナビゲーションをここに置く -->
+      {% if user.is_authenticated %}
+      <div class="mb-4 text-sm text-gray-700">
+        <p>こんにちは {{ user.username }}さん！</p>
+
+        <a
+          href="{% url 'timeline' %}"
+          class="text-blue-500 hover:underline mr-2"
+          >TimeLine</a
+        >
+        <a
+          href="{% url 'prediction_list' %}"
+          class="text-blue-500 hover:underline mr-2"
+          >My予想</a
+        >
+        <a
+          href="{% url 'user_list' %}"
+          class="text-blue-500 hover:underline mr-2"
+          >フレンド</a
+        >
+        <a
+          href="{% url 'group_list' %}"
+          class="text-blue-500 hover:underline mr-2"
+          >グループ</a
+        >
+        <a href="{% url 'profile' %}" class="text-blue-500 hover:underline"
+          >プロフィール</a
+        >
+        <form action="{% url 'logout' %}" method="post" class="inline">
+          {% csrf_token %}
+          <button type="submit" class="text-blue-500 hover:underline mr-2">
+            ログアウト
+          </button>
+        </form>
+      </div>
+      {% else %}
+      <a href="{% url 'login' %}" class="text-sm text-blue-500">ログイン</a>
+      {% endif %} {% block content %}{% endblock %}
+    </div>
+  </body>
+</html>

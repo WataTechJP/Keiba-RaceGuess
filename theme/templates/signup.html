@@ -1,0 +1,18 @@
+<!-- prettier-ignore -->
+{% extends "base.html" %}
+
+{% block title %}新規アカウント登録{% endblock %}
+
+{% block content %}
+<h2 class="text-xl font-bold mb-4">新規アカウント登録</h2>
+
+<form method="post" class="space-y-4">
+  {% csrf_token %} {{ form.as_p }}
+  <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">
+    登録する
+  </button>
+</form>
+<a href="{% url 'login' %}" class="text-sm text-blue-500 mt-2 block"
+  >← ログインはこちら</a
+>
+{% endblock %}

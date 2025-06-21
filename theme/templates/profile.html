@@ -1,0 +1,48 @@
+<!-- prettier-ignore -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}プロフィール{% endblock %}
+
+{% block content %}
+<h2 class="text-2xl font-bold mb-4 text-blue-600">プロフィール</h2>
+<div
+  class="bg-white shadow-md rounded p-6 max-w-md mx-auto space-y-4 text-center"
+>
+  {% if user.userprofile.profile_image %}
+  <div
+    class="w-32 h-32 mx-auto overflow-hidden rounded-full border border-gray-300 shadow-md"
+  >
+    <img
+      src="{{ user.userprofile.profile_image.url }}?v={{ profile.updated_at|date:'U' }}"
+      alt="プロフィール画像"
+      class="w-full h-full object-cover rounded-full"
+    />
+  </div>
+  {% else %}
+  <div
+    class="w-32 h-32 mx-auto overflow-hidden rounded-full border border-gray-300 shadow-md"
+  >
+    <img
+      src="{% static 'images/user.png' %}"
+      alt="デフォルトプロフィール画像"
+      class="w-full h-full object-cover rounded-full"
+    />
+  </div>
+  {% endif %}
+
+  <p><strong>ユーザー名：</strong> {{ user.username }}</p>
+  <p><strong>メールアドレス：</strong> {{ user.email }}</p>
+  <p><strong>登録日：</strong> {{ user.date_joined|date:"Y年m月d日" }}</p>
+
+  <form method="POST" enctype="multipart/form-data" class="space-y-2">
+    {% csrf_token %} {{ form.as_p }}
+    <button
+      type="submit"
+      class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+    >
+      プロフィール画像を更新
+    </button>
+  </form>
+</div>
+{% endblock %}
