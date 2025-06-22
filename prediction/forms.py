@@ -1,6 +1,5 @@
 from django import forms
-from .models import Prediction, Horse
-from .models import UserProfile
+from .models import Prediction, Horse, UserProfile, GroupMessage, GroupPrediction, PredictionGroup
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 
@@ -49,3 +48,21 @@ class UserProfileForm(forms.ModelForm):
     class Meta:
         model = UserProfile
         fields = ['profile_image']
+
+class GroupMessageForm(forms.ModelForm):
+    class Meta:
+        model = GroupMessage
+        fields = ['content']
+
+class SelectMyPredictionForm(forms.Form):
+    my_prediction = forms.ModelChoiceField(
+        queryset=Prediction.objects.none(),
+        label="共有する予想",
+    )
+
+    def __init__(self, *args, user=None, group=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if user:
+            # すでに共有してない予想だけ表示
+            used_ids = GroupPrediction.objects.filter(group=group, user=user).values_list("race_id", flat=True)
+            self.fields["my_prediction"].queryset = Prediction.objects.filter(user=user).exclude(race_id__in=used_ids)

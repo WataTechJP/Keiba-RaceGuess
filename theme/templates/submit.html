@@ -22,6 +22,56 @@
     const secondSelect = document.getElementById("id_second_position");
     const thirdSelect = document.getElementById("id_third_position");
 
+    function populateHorseOptions(horses) {
+      [firstSelect, secondSelect, thirdSelect].forEach((select) => {
+        select.innerHTML = "";
+
+        const emptyOption = document.createElement("option");
+        emptyOption.value = "";
+        emptyOption.textContent = "---------";
+        select.appendChild(emptyOption);
+
+        horses.forEach((horse) => {
+          const option = document.createElement("option");
+          option.value = horse.id;
+          option.textContent = horse.name;
+          select.appendChild(option);
+        });
+      });
+
+      // 初期化後にもフィルターを適用
+      filterOptions();
+    }
+
+    function filterOptions() {
+      const selectedFirst = firstSelect.value;
+      const selectedSecond = secondSelect.value;
+      const selectedThird = thirdSelect.value;
+
+      const selectedValues = [
+        selectedFirst,
+        selectedSecond,
+        selectedThird,
+      ].filter((v) => v !== "");
+
+      [firstSelect, secondSelect, thirdSelect].forEach((currentSelect) => {
+        Array.from(currentSelect.options).forEach((option) => {
+          if (option.value === "") {
+            option.disabled = false;
+            return;
+          }
+
+          // 自分のセレクトで選んでいる値は除外対象から外す
+          const currentValue = currentSelect.value;
+          const isSelectedInOther =
+            selectedValues.includes(option.value) &&
+            option.value !== currentValue;
+
+          option.disabled = isSelectedInOther;
+        });
+      });
+    }
+
     raceSelect.addEventListener("change", function () {
       const raceId = this.value;
       if (!raceId) return;
@@ -29,25 +79,13 @@
       fetch(`/api/horses/?race_id=${raceId}`)
         .then((response) => response.json())
         .then((data) => {
-          [firstSelect, secondSelect, thirdSelect].forEach((select) => {
-            // 中身を初期化
-            select.innerHTML = "";
-            // 初期の空オプション
-            const emptyOption = document.createElement("option");
-            emptyOption.value = "";
-            emptyOption.textContent = "---------";
-            select.appendChild(emptyOption);
-
-            // 馬データを追加
-            data.forEach((horse) => {
-              const option = document.createElement("option");
-              option.value = horse.id;
-              option.textContent = horse.name;
-              select.appendChild(option);
-            });
-          });
+          populateHorseOptions(data);
         });
     });
+
+    [firstSelect, secondSelect, thirdSelect].forEach((select) =>
+      select.addEventListener("change", filterOptions)
+    );
   });
 </script>
 

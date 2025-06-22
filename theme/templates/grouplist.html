@@ -1,6 +1,30 @@
 <!-- prettier-ignore -->
 {% extends 'base.html' %}
-
-{% block title %}グループ{% endblock %}
+{% block title %}グループ一覧{% endblock %}
 
 {% block content %}
+<h1 class="text-2xl font-bold mb-4">あなたのグループ一覧</h1>
+
+<ul class="mb-6">
+  {% for group in groups %}
+  <li class="mb-2">
+    <a
+      href="{% url 'group_detail' group.id %}"
+      class="text-blue-600 hover:underline"
+    >
+      {{ group.name }}
+    </a>
+    （メンバー数: {{ group.members.count }}人）
+  </li>
+  {% empty %}
+  <li>まだグループに参加していません。</li>
+  {% endfor %}
+</ul>
+
+<a
+  href="{% url 'create_group' %}"
+  class="inline-block bg-green-500 text-black px-4 py-2 rounded hover:bg-green-600"
+>
+  ＋ グループを作成
+</a>
+{% endblock %}
