@@ -1,0 +1,88 @@
+<!-- prettier-ignore -->
+{% extends 'base.html' %}
+{% block title %}{{ group.name }}{% endblock %}
+
+{% block content %}
+<h1 class="text-xl font-bold mb-4">{{ group.name }}</h1>
+
+<h2 class="text-lg font-semibold">💬 チャット</h2>
+<ul class="border p-2 mb-4 max-h-48 overflow-y-scroll">
+  {% for message in messages %}
+  <li>
+    <strong>{{ message.sender.username }}:</strong> {{ message.content }}
+    <small class="text-gray-400">{{ message.timestamp }}</small>
+  </li>
+  {% endfor %}
+</ul>
+
+<form method="post">
+  {% csrf_token %} {{ message_form.as_p }}
+  <button
+    type="submit"
+    name="message_submit"
+    class="bg-blue-500 text-white px-3 py-1 rounded"
+  >
+    送信
+  </button>
+</form>
+
+<h2 class="text-lg font-semibold mt-6">🐎 My予想</h2>
+<ul class="mb-4">
+  {% for p in predictions %}
+  <li>
+    <span class="inline-block">
+      <li>
+        <strong>{{ p.user.username }}</strong> <br />
+        {{ p.race.name }}<br />
+        1着 {{ p.first_position.name }}<br />
+        2着 {{ p.second_position.name }}<br />
+        3着 {{ p.third_position.name }}
+      </li>
+    </span>
+    {% if request.user == p.user %}
+    <a
+      href="{% url 'delete_group_prediction' group.id p.id %}"
+      class="text-red-500 text-sm ml-2"
+      onclick="return confirm('本当に削除しますか？');"
+    >
+      削除
+    </a>
+    {% endif %}
+  </li>
+  {% empty %}
+  <li>まだ共有された予想はありません。</li>
+  {% endfor %}
+</ul>
+
+<h2 class="text-lg font-semibold mt-6">📤 予想をグループに共有</h2>
+
+<form method="post" class="mb-6">
+  {% csrf_token %} {{ share_form.as_p }}
+  <button
+    type="submit"
+    name="share_prediction"
+    class="bg-green-600 text-black px-4 py-1 rounded"
+  >
+    この予想をグループに共有する
+  </button>
+</form>
+
+<h3 class="text-lg font-bold">📝 グループ内の予想</h3>
+<ul class="list-disc pl-5">
+  {% for p in predictions %}
+  <li>
+    <strong>{{ p.user.username }}</strong> <br />
+    {{ p.race.name }}<br />
+    1着 {{ p.first_position.name }}<br />
+    2着 {{ p.second_position.name }}<br />
+    3着 {{ p.third_position.name }}
+  </li>
+  {% empty %}
+  <li>まだ共有された予想はありません。</li>
+  {% endfor %}
+</ul>
+
+<a href="{% url 'group_list' %}" class="text-sm text-blue-600 mt-6 inline-block"
+  >← グループ一覧に戻る</a
+>
+{% endblock %}
