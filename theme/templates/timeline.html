@@ -4,7 +4,16 @@
 {% block title %}タイムライン{% endblock %}
 
 {% block content %}
-<h1 class="text-2xl font-bold text-blue-600 mb-4">TimeLine</h1>
+<h1 class="text-2xl font-bold text-blue-600 mb-2">
+  <a href="{% url 'timeline' %}" class="transform transition-all duration-300 hover:-translate-y-2 hover:text-blue-700 inline-block">
+    TimeLine
+  </a>
+</h1>
+<h2 class="text-xl font-bold text-black mb-2">ここでは、あなたやフレンドの予想がタイムラインに表示されます。</h2>
+
+<a href="{% url 'submit_prediction' %}" class="inline-block bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mb-4">
+  ＋ 予想を作成
+</a> 
 
 <form method="get" class="mb-4">
   <label for="race_id">レースで絞り込み:</label>
@@ -62,5 +71,5 @@
 <p class="text-gray-500">まだ予想が表示されていません。</p>
 {% endif %}
 
-<a href="{% url 'user_list' %}" class="text-sm text-gray-500 mt-6 block">← ユーザー一覧へ</a>
+<a href="{% url 'user_list' %}" class="text-sm text-gray-500 mt-6 block">← フレンド一覧へ</a>
 {% endblock %}

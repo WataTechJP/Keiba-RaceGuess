@@ -21,6 +21,7 @@ urlpatterns = [
     path('groups/<int:group_id>/', views.group_detail, name='group_detail'),
     path('groups/<int:group_id>/delete/<int:prediction_id>/', views.delete_group_prediction, name='delete_group_prediction'),
     path('results/', result_list_view, name='result_list'),
+    path('analysis/', views.analysis_view, name='analysis'),
 ]
 
 if settings.DEBUG:

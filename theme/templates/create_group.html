@@ -17,7 +17,7 @@
     />
   </label>
 
-  <p>メンバーを選択（あなたがフォローしているユーザー）:</p>
+  <p>招待メンバーを選択（あなたのフレンド）:</p>
   <div class="space-y-1">
     {% for user in following_users %}
     <label class="block">
@@ -25,7 +25,7 @@
       {{ user.username }}
     </label>
     {% empty %}
-    <p>フォロー中のユーザーがいません。</p>
+    <p>フォロー中のフレンドがいません。</p>
     {% endfor %}
   </div>
 
