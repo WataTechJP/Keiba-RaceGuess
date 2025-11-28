@@ -326,3 +326,173 @@ def result_list_view(request):
         'evaluated_results': evaluated_results,
         'user_point': user_point,  # ← これが無いとテンプレートで `user_point.points` が使えない
     })
+
+
+import io
+import base64
+import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Agg')  # GUI不要のバックエンドを使用
+
+@login_required
+def analysis_view(request):
+    """データ分析ビュー"""
+    try:
+        # インポートを関数内に移動
+        from django.db.models import Count
+        from django.db.models.functions import TruncMonth  # ← ここを修正
+        
+        # データ取得
+        predictions = list(Prediction.objects.values())
+        races = list(Race.objects.values())
+        horses = list(Horse.objects.values())
+        results = list(RaceResult.objects.values())
+        
+        # 統計データ計算
+        stats = {
+            'total_predictions': len(predictions),
+            'total_races': len(races),
+            'total_horses': len(horses),
+            'total_results': len(results),
+            'total_users': User.objects.count(),
+            'total_groups': PredictionGroup.objects.count(),
+        }
+        
+        # 的中率計算
+        correct_predictions = 0
+        total_evaluated = 0
+        
+        for pred_data in predictions:
+            pred = Prediction.objects.get(id=pred_data['id'])
+            result = RaceResult.objects.filter(race=pred.race).first()
+            if result:
+                total_evaluated += 1
+                if (pred.first_position == result.first_place or 
+                    pred.second_position == result.second_place or 
+                    pred.third_position == result.third_place):
+                    correct_predictions += 1
+        
+        accuracy_rate = (correct_predictions / total_evaluated * 100) if total_evaluated > 0 else 0
+        stats['accuracy_rate'] = round(accuracy_rate, 1)
+        stats['evaluated_predictions'] = total_evaluated
+        
+        # グラフ作成
+        plt.figure(figsize=(15, 10))
+        plt.style.use('default')
+        
+        # 日本語フォント設定
+        try:
+            plt.rcParams['font.family'] = 'Hiragino Sans'
+        except:
+            pass
+        
+        # 2x3のサブプロット
+        # 1. データ件数分布
+        plt.subplot(2, 3, 1)
+        categories = ['予想', 'レース', '馬', '結果', 'ユーザー']
+        values = [stats['total_predictions'], stats['total_races'], 
+                 stats['total_horses'], stats['total_results'], stats['total_users']]
+        colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57']
+        plt.bar(categories, values, color=colors)
+        plt.title('データ件数分布')
+        plt.ylabel('件数')
+        plt.xticks(rotation=45)
+        
+        # 2. 的中率表示
+        plt.subplot(2, 3, 2)
+        labels = ['的中', '外れ']
+        sizes = [correct_predictions, total_evaluated - correct_predictions] if total_evaluated > 0 else [1, 1]
+        colors = ['#2ECC71', '#E74C3C']
+        plt.pie(sizes, labels=labels, colors=colors, autopct='%1.1f%%', startangle=90)
+        plt.title(f'予想的中率\n({stats["accuracy_rate"]}%)')
+        
+        # 3. ユーザー別予想数
+        plt.subplot(2, 3, 3)
+        user_pred_counts = Prediction.objects.values('user__username').annotate(
+            count=Count('id')).order_by('-count')[:5]
+        
+        if user_pred_counts:
+            usernames = [item['user__username'] for item in user_pred_counts]
+            counts = [item['count'] for item in user_pred_counts]
+            plt.bar(usernames, counts, color='#3498DB')
+            plt.title('予想数TOP5ユーザー')
+            plt.ylabel('予想数')
+            plt.xticks(rotation=45)
+        else:
+            plt.text(0.5, 0.5, 'データなし', ha='center', va='center')
+            plt.title('予想数TOP5ユーザー')
+        
+        # 4. レース別予想数
+        plt.subplot(2, 3, 4)
+        race_pred_counts = Prediction.objects.values('race__name').annotate(
+            count=Count('id')).order_by('-count')[:5]
+        
+        if race_pred_counts:
+            race_names = [item['race__name'][:10] + '...' if len(item['race__name']) > 10 
+                         else item['race__name'] for item in race_pred_counts]
+            counts = [item['count'] for item in race_pred_counts]
+            plt.bar(race_names, counts, color='#E67E22')
+            plt.title('予想数TOP5レース')
+            plt.ylabel('予想数')
+            plt.xticks(rotation=45)
+        else:
+            plt.text(0.5, 0.5, 'データなし', ha='center', va='center')
+            plt.title('予想数TOP5レース')
+        
+        # 5. ポイント分布
+        plt.subplot(2, 3, 5)
+        user_points = UserPoint.objects.all().values_list('points', flat=True)
+        if user_points:
+            plt.hist(user_points, bins=10, color='#9B59B6', alpha=0.7)
+            plt.title('ユーザーポイント分布')
+            plt.xlabel('ポイント')
+            plt.ylabel('ユーザー数')
+        else:
+            plt.text(0.5, 0.5, 'ポイントデータなし', ha='center', va='center')
+            plt.title('ユーザーポイント分布')
+        
+        # 6. 月別予想数（時系列）- TruncMonthを使用
+        plt.subplot(2, 3, 6)
+        try:
+            monthly_data = Prediction.objects.annotate(
+                month=TruncMonth('created_at')).values('month').annotate(
+                count=Count('id')).order_by('month')
+            
+            if monthly_data:
+                months = [item['month'].strftime('%Y-%m') for item in monthly_data]
+                counts = [item['count'] for item in monthly_data]
+                plt.plot(months, counts, marker='o', color='#1ABC9C')
+                plt.title('月別予想数推移')
+                plt.xlabel('月')
+                plt.ylabel('予想数')
+                plt.xticks(rotation=45)
+            else:
+                plt.text(0.5, 0.5, '時系列データなし', ha='center', va='center')
+                plt.title('月別予想数推移')
+        except Exception:
+            # TruncMonthでエラーが出る場合は簡単なグラフに変更
+            plt.text(0.5, 0.5, '時系列データ準備中', ha='center', va='center')
+            plt.title('月別予想数推移')
+        
+        plt.tight_layout()
+        
+        # Base64エンコード
+        buffer = io.BytesIO()
+        plt.savefig(buffer, format='png', dpi=150, bbox_inches='tight')
+        buffer.seek(0)
+        chart_data = base64.b64encode(buffer.getvalue()).decode()
+        plt.close()
+        
+        context = {
+            'stats': stats,
+            'chart': chart_data,
+            'success': True
+        }
+        
+    except Exception as e:
+        context = {
+            'error': str(e),
+            'success': False
+        }
+    
+    return render(request, 'prediction/analysis.html', context)

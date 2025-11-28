@@ -38,9 +38,15 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "tailwind",        # Tailwind CSS 用
-    "theme",           # Tailwind テーマアプリ
-    "prediction",      # 予想機能アプリ
+    # 3rd party
+    "tailwind",
+    "rest_framework",
+    "rest_framework.authtoken",
+    # project apps
+    "theme",
+    "prediction",
+    "api",
+    "django_extensions",
 ]
 
 TAILWIND_APP_NAME = "theme"
@@ -148,3 +154,13 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 MEDIA_ROOT = BASE_DIR / 'media'
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.TokenAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticatedOrReadOnly",
+    ],
+}

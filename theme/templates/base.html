@@ -15,9 +15,10 @@
 
         <a
           href="{% url 'timeline' %}"
-          class="text-blue-500 hover:underline mr-2"
-          >TimeLine</a
+          class="text-blue-500 mr-2 hover:bg-blue-600 rounded"
         >
+          TimeLine
+        </a>
         <a
           href="{% url 'prediction_list' %}"
           class="text-blue-500 hover:underline mr-2"
@@ -25,8 +26,13 @@
         >
         <a
           href="{% url 'result_list' %}"
-          class="ml-4 text-blue-600 hover:underline"
+          class="ml-4 text-blue-600 hover:underline mr-2"
           >結果一覧</a
+        >
+        <a
+          href="{% url 'analysis' %}"
+          class="text-blue-500 hover:underline mr-2"
+          >データ分析</a
         >
         <a
           href="{% url 'user_list' %}"
@@ -36,14 +42,14 @@
         <a
           href="{% url 'group_list' %}"
           class="text-blue-500 hover:underline mr-2"
-          >グループ</a
+          >ルーム</a
         >
         <a href="{% url 'profile' %}" class="text-blue-500 hover:underline"
           >プロフィール</a
         >
         <form action="{% url 'logout' %}" method="post" class="inline">
           {% csrf_token %}
-          <button type="submit" class="text-blue-500 hover:underline mr-2">
+          <button type="submit" class="text-blue-500 hover:bg-red-500 mr-2">
             ログアウト
           </button>
         </form>

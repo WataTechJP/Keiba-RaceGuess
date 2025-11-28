@@ -4,7 +4,10 @@
 {% block title %}予想一覧{% endblock %}
 
 {% block content %}
-<h1 class="text-2xl font-bold text-blue-600 mb-6">My予想一覧</h1>
+<h1 class="text-2xl font-bold text-blue-600 mb-2">My予想</h1>
+<h2 class="text-xl font-bold text-black mb-2">
+  ここでは、あなたの予想が確認できます。
+</h2>
 
 {% if predictions %}
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -16,8 +19,6 @@
         {{ p.created_at|date:"Y年m月d日 H:i" }}
       </span>
     </div>
-
-    <p class="text-sm text-gray-600 mb-1">👤 {{ p.user.username }}</p>
 
     <ul class="text-sm text-gray-700 space-y-1 mb-4">
       <li>🥇 1着：<strong>{{ p.first_position.name }}</strong></li>
@@ -33,7 +34,7 @@
     >
       {% csrf_token %}
       <button type="submit" class="text-sm text-red-500 hover:underline">
-        🗑️ 削除
+        🗑️ 取り消す
       </button>
     </form>
     {% endif %}
@@ -46,8 +47,8 @@
 
 <a
   href="{% url 'submit_prediction' %}"
-  class="text-sm text-blue-500 mt-6 inline-block"
+  class="inline-block bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mb-4 mt-4"
 >
-  ← 予想を投稿する
+  ＋ 予想を作成
 </a>
 {% endblock %}
