@@ -3,7 +3,6 @@ import React, { useState, useEffect } from "react";
 import {
   View,
   FlatList,
-  StyleSheet,
   Text,
   Alert,
   RefreshControl,
@@ -11,7 +10,6 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { Colors } from "../../src/constants/colors";
 import client from "../../src/api/client";
 import type { Prediction } from "../../src/types/prediction";
 
@@ -27,10 +25,8 @@ export default function PredictionsScreen() {
 
   const loadPredictions = async () => {
     try {
-      console.log("予想一覧を読み込み中...");
       const response = await client.get("/api/predictions/");
       setPredictions(response.data);
-      console.log("✅ 予想一覧:", response.data.length, "件");
     } catch (error) {
       console.error("❌ 予想読み込みエラー:", error);
       Alert.alert("エラー", "予想一覧の読み込みに失敗しました");
@@ -53,6 +49,7 @@ export default function PredictionsScreen() {
         style: "destructive",
         onPress: async () => {
           try {
+            // NOTE: あなたのコードはここだけURLが違うので一旦そのまま
             await client.delete(`/predictions/${predictionId}/`);
             Alert.alert("成功", "予想を削除しました");
             loadPredictions();
@@ -76,46 +73,53 @@ export default function PredictionsScreen() {
   };
 
   const renderPrediction = ({ item }: { item: Prediction }) => (
-    <View style={styles.predictionCard}>
+    <View className="bg-white rounded-xl p-4 mb-3 shadow-sm">
       {/* ヘッダー */}
-      <View style={styles.cardHeader}>
-        <View style={styles.raceInfo}>
-          <Text style={styles.raceName}>{item.race.name}</Text>
-          <Text style={styles.date}>{formatDate(item.created_at)}</Text>
+      <View className="flex-row justify-between items-start mb-4">
+        <View className="flex-1">
+          <Text className="text-base font-semibold text-gray-800 mb-1">
+            {item.race.name}
+          </Text>
+          <Text className="text-xs text-gray-500">
+            {formatDate(item.created_at)}
+          </Text>
         </View>
-        <TouchableOpacity
-          onPress={() => handleDelete(item.id)}
-          style={styles.deleteButton}
-        >
-          <Ionicons
-            name="trash-outline"
-            size={20}
-            color={Colors.status.error}
-          />
+
+        <TouchableOpacity onPress={() => handleDelete(item.id)} className="p-1">
+          <Ionicons name="trash-outline" size={20} color="#ef4444" />
         </TouchableOpacity>
       </View>
 
       {/* 予想内容 */}
-      <View style={styles.positions}>
-        <View style={styles.positionRow}>
-          <View style={[styles.badge, styles.firstBadge]}>
-            <Text style={styles.badgeText}>1着</Text>
+      <View>
+        {/* 1着 */}
+        <View className="flex-row items-center">
+          <View className="w-12 py-1 rounded items-center bg-amber-400">
+            <Text className="text-xs font-semibold text-white">1着</Text>
           </View>
-          <Text style={styles.horseName}>{item.first_position.name}</Text>
+          <Text className="ml-3 text-sm text-gray-800 flex-1">
+            {item.first_position.name}
+          </Text>
         </View>
 
-        <View style={styles.positionRow}>
-          <View style={[styles.badge, styles.secondBadge]}>
-            <Text style={styles.badgeText}>2着</Text>
+        {/* 2着 */}
+        <View className="flex-row items-center mt-2">
+          <View className="w-12 py-1 rounded items-center bg-gray-300">
+            <Text className="text-xs font-semibold text-white">2着</Text>
           </View>
-          <Text style={styles.horseName}>{item.second_position.name}</Text>
+          <Text className="ml-3 text-sm text-gray-800 flex-1">
+            {item.second_position.name}
+          </Text>
         </View>
 
-        <View style={styles.positionRow}>
-          <View style={[styles.badge, styles.thirdBadge]}>
-            <Text style={styles.badgeText}>3着</Text>
+        {/* 3着 */}
+        <View className="flex-row items-center mt-2">
+          <View className="w-12 py-1 rounded items-center bg-[#cd7f32]">
+            <Text className="text-xs font-semibold text-white">3着</Text>
           </View>
-          <Text style={styles.horseName}>{item.third_position.name}</Text>
+          <Text className="ml-3 text-sm text-gray-800 flex-1">
+            {item.third_position.name}
+          </Text>
         </View>
       </View>
     </View>
@@ -123,37 +127,43 @@ export default function PredictionsScreen() {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View className="flex-1 items-center justify-center">
         <Text>読み込み中...</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View className="flex-1 bg-transparent">
       {/* タイトル */}
-      <View style={styles.header}>
-        <Text style={styles.title}>予想一覧</Text>
+      <View className="flex-row justify-between items-center p-4">
+        <Text className="text-2xl font-bold text-emerald-600">予想一覧</Text>
+
         <TouchableOpacity
           onPress={() => router.push("/(tabs)/submit")}
-          style={styles.addButton}
+          className="p-1"
+          activeOpacity={0.8}
         >
-          <Ionicons name="add-circle" size={32} color={Colors.secondary.main} />
+          <Ionicons name="add-circle" size={32} color="#10b981" />
         </TouchableOpacity>
       </View>
 
       {predictions.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyEmoji}>🏇</Text>
-          <Text style={styles.emptyTitle}>まだ予想がありません</Text>
-          <Text style={styles.emptyText}>
+        <View className="flex-1 items-center justify-center px-8">
+          <Text className="text-6xl mb-4">🏇</Text>
+          <Text className="text-xl font-semibold text-gray-800 mb-2">
+            まだ予想がありません
+          </Text>
+          <Text className="text-sm text-gray-600 text-center mb-6">
             「投稿する」ボタンから予想を投稿しましょう！
           </Text>
+
           <TouchableOpacity
             onPress={() => router.push("/(tabs)/submit")}
-            style={styles.emptyButton}
+            className="bg-emerald-600 px-6 py-3 rounded-lg"
+            activeOpacity={0.85}
           >
-            <Text style={styles.emptyButtonText}>予想を投稿する</Text>
+            <Text className="text-white font-semibold">予想を投稿する</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -161,7 +171,7 @@ export default function PredictionsScreen() {
           data={predictions}
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderPrediction}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={{ padding: 16, paddingTop: 0 }}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
@@ -170,132 +180,3 @@ export default function PredictionsScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background.secondary,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 16,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: Colors.secondary.main,
-  },
-  addButton: {
-    padding: 4,
-  },
-  list: {
-    padding: 16,
-    paddingTop: 0,
-  },
-  predictionCard: {
-    backgroundColor: Colors.neutral.white,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: Colors.neutral.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 16,
-  },
-  raceInfo: {
-    flex: 1,
-  },
-  raceName: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: Colors.neutral.gray800,
-    marginBottom: 4,
-  },
-  date: {
-    fontSize: 12,
-    color: Colors.neutral.gray500,
-  },
-  deleteButton: {
-    padding: 4,
-  },
-  positions: {
-    gap: 8,
-  },
-  positionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  badge: {
-    width: 48,
-    paddingVertical: 4,
-    borderRadius: 4,
-    alignItems: "center",
-  },
-  firstBadge: {
-    backgroundColor: "#fbbf24",
-  },
-  secondBadge: {
-    backgroundColor: "#d1d5db",
-  },
-  thirdBadge: {
-    backgroundColor: "#cd7f32",
-  },
-  badgeText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: Colors.neutral.white,
-  },
-  horseName: {
-    fontSize: 14,
-    color: Colors.neutral.gray800,
-    flex: 1,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 32,
-  },
-  emptyEmoji: {
-    fontSize: 64,
-    marginBottom: 16,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: Colors.neutral.gray800,
-    marginBottom: 8,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: Colors.neutral.gray600,
-    textAlign: "center",
-    marginBottom: 24,
-  },
-  emptyButton: {
-    backgroundColor: Colors.secondary.main,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  emptyButtonText: {
-    color: Colors.neutral.white,
-    fontSize: 14,
-    fontWeight: "600",
-  },
-});

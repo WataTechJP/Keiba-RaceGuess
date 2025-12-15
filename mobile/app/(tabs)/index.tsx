@@ -1,15 +1,18 @@
-// app/(tabs)/index.tsx (修正版)
 import React, { useState, useEffect } from "react";
 import {
   View,
   ScrollView,
-  StyleSheet,
   Text,
   RefreshControl,
+  ActivityIndicator,
+  TouchableOpacity,
+  FlatList,
+  Image,
 } from "react-native";
+import { Picker } from "@react-native-picker/picker";
 import { useRouter } from "expo-router";
-import { Colors } from "../../src/constants/colors";
 import client from "../../src/api/client";
+import { LinearGradient } from "expo-linear-gradient";
 
 interface Prediction {
   id: number;
@@ -32,209 +35,375 @@ interface Prediction {
   created_at: string;
 }
 
+interface TimelinePrediction {
+  id: number;
+  race_name: string;
+  first_position_name: string;
+  second_position_name: string;
+  third_position_name: string;
+  created_at: string;
+  user: {
+    username: string;
+    profile_image_url?: string;
+  };
+}
+
+interface Race {
+  id: number;
+  name: string;
+}
+
+type TabType = "my" | "timeline";
+
 export default function HomeScreen() {
   const router = useRouter();
-  const [predictions, setPredictions] = useState<Prediction[]>([]); // 初期値を空配列に
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+
+  // タブ切り替え
+  const [activeTab, setActiveTab] = useState<TabType>("my");
+
+  // 俺の予想
+  const [myPredictions, setMyPredictions] = useState<Prediction[]>([]);
+  const [myLoading, setMyLoading] = useState(true);
+  const [myRefreshing, setMyRefreshing] = useState(false);
+
+  // タイムライン
+  const [races, setRaces] = useState<Race[]>([]);
+  const [timelinePredictions, setTimelinePredictions] = useState<
+    TimelinePrediction[]
+  >([]);
+  const [selectedRace, setSelectedRace] = useState<string>("");
+  const [timelineLoading, setTimelineLoading] = useState(false);
 
   useEffect(() => {
-    loadPredictions();
+    loadMyPredictions();
+    loadTimelineData();
   }, []);
 
-  const loadPredictions = async () => {
+  // 俺の予想を読み込み
+  const loadMyPredictions = async () => {
     try {
       console.log("予想一覧を読み込み中...");
       const response = await client.get("/api/predictions/");
 
-      // レスポンスが配列かチェック
       if (Array.isArray(response.data)) {
-        setPredictions(response.data);
+        setMyPredictions(response.data);
         console.log("✅ 予想一覧:", response.data.length, "件");
       } else {
         console.error("❌ レスポンスが配列ではありません:", response.data);
-        setPredictions([]);
+        setMyPredictions([]);
       }
     } catch (error) {
       console.error("❌ 予想読み込みエラー:", error);
-      setPredictions([]); // エラー時も空配列をセット
+      setMyPredictions([]);
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      setMyLoading(false);
+      setMyRefreshing(false);
     }
   };
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    loadPredictions();
+  // タイムラインを読み込み
+  const loadTimelineData = async (raceId?: string) => {
+    setTimelineLoading(true);
+    try {
+      const racePromise = client.get<Race[]>("/api/races/");
+      const params = raceId ? { params: { race_id: raceId } } : undefined;
+      const predictionPromise = client.get<TimelinePrediction[]>(
+        "/api/predictions/timeline/",
+        params
+      );
+      const [raceRes, predictionRes] = await Promise.all([
+        racePromise,
+        predictionPromise,
+      ]);
+      setRaces(raceRes.data);
+      setTimelinePredictions(predictionRes.data);
+    } catch (error) {
+      console.error("❌ タイムライン読み込みエラー:", error);
+    } finally {
+      setTimelineLoading(false);
+    }
   };
 
-  if (loading) {
+  const onMyRefresh = () => {
+    setMyRefreshing(true);
+    loadMyPredictions();
+  };
+
+  const handleFilterChange = (value: string) => {
+    setSelectedRace(value);
+    loadTimelineData(value || undefined);
+  };
+
+  if (myLoading && activeTab === "my") {
     return (
-      <View style={styles.loadingContainer}>
-        <Text>読み込み中...</Text>
+      <View className="flex-1 items-center justify-center bg-keiba-500">
+        <View className="bg-white rounded-2xl p-8 shadow-lg">
+          <ActivityIndicator size="large" color="#22c55e" />
+          <Text className="text-text-primary mt-4 font-semibold">
+            読み込み中...
+          </Text>
+        </View>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.content}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        {/* タイトル */}
-        <Text style={styles.title}>ホーム</Text>
+    <LinearGradient
+      colors={["#87CEEB", "#4CAF50"]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0, y: 1 }}
+      style={{ flex: 1 }}
+    >
+      {/* タブ切り替え */}
+      <View className="flex-row bg-white mx-4 mt-4 rounded-2xl p-1 shadow-lg">
+        <TouchableOpacity
+          className={`flex-1 py-3 rounded-xl ${
+            activeTab === "my" ? "bg-keiba-500" : "bg-transparent"
+          }`}
+          onPress={() => setActiveTab("my")}
+        >
+          <Text
+            className={`text-center font-bold ${
+              activeTab === "my" ? "text-white" : "text-text-secondary"
+            }`}
+          >
+            🏇 俺の予想
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          className={`flex-1 py-3 rounded-xl ${
+            activeTab === "timeline" ? "bg-keiba-500" : "bg-transparent"
+          }`}
+          onPress={() => setActiveTab("timeline")}
+        >
+          <Text
+            className={`text-center font-bold ${
+              activeTab === "timeline" ? "text-white" : "text-text-secondary"
+            }`}
+          >
+            🕒 タイムライン
+          </Text>
+        </TouchableOpacity>
+      </View>
 
-        {/* 予想一覧セクション */}
-        <Text style={styles.sectionTitle}>俺の予想</Text>
+      {/* 俺の予想タブ */}
+      {activeTab === "my" && (
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 96 }}
+          refreshControl={
+            <RefreshControl refreshing={myRefreshing} onRefresh={onMyRefresh} />
+          }
+        >
+          {/* 予想一覧セクション */}
+          <View className="bg-white rounded-2xl p-4 mt-4 shadow-lg">
+            <Text className="text-xl font-bold text-text-primary mb-4">
+              📋 俺の予想
+            </Text>
 
-        {predictions.length > 0 ? (
-          predictions.map((prediction) => (
-            <View key={prediction.id} style={styles.card}>
-              <Text style={styles.cardTitle}>{prediction.race.name}</Text>
-              <View style={styles.positions}>
-                <View style={styles.positionRow}>
-                  <View style={[styles.badge, styles.firstBadge]}>
-                    <Text style={styles.badgeText}>1着</Text>
+            {myPredictions.length > 0 ? (
+              myPredictions.map((prediction, index) => (
+                <View
+                  key={prediction.id}
+                  className={`bg-keiba-50 rounded-xl p-4 ${
+                    index < myPredictions.length - 1 ? "mb-3" : ""
+                  }`}
+                >
+                  {/* レース名 */}
+                  <Text className="text-base font-bold text-text-primary mb-3">
+                    {prediction.race.name}
+                  </Text>
+
+                  {/* 予想順位 */}
+                  <View className="gap-y-2">
+                    {/* 1着 */}
+                    <View className="flex-row items-center">
+                      <View className="bg-yellow-400 rounded-lg px-3 py-2 w-14 items-center">
+                        <Text className="text-xs font-bold text-white">
+                          1着
+                        </Text>
+                      </View>
+                      <Text className="text-sm text-text-primary font-semibold ml-3 flex-1">
+                        {prediction.first_position.name}
+                      </Text>
+                    </View>
+
+                    {/* 2着 */}
+                    <View className="flex-row items-center">
+                      <View className="bg-gray-400 rounded-lg px-3 py-2 w-14 items-center">
+                        <Text className="text-xs font-bold text-white">
+                          2着
+                        </Text>
+                      </View>
+                      <Text className="text-sm text-text-primary font-semibold ml-3 flex-1">
+                        {prediction.second_position.name}
+                      </Text>
+                    </View>
+
+                    {/* 3着 */}
+                    <View className="flex-row items-center">
+                      <View className="bg-orange-600 rounded-lg px-3 py-2 w-14 items-center">
+                        <Text className="text-xs font-bold text-white">
+                          3着
+                        </Text>
+                      </View>
+                      <Text className="text-sm text-text-primary font-semibold ml-3 flex-1">
+                        {prediction.third_position.name}
+                      </Text>
+                    </View>
                   </View>
-                  <Text style={styles.horseName}>
-                    {prediction.first_position.name}
+
+                  {/* 投稿日時 */}
+                  <Text className="text-xs text-text-secondary mt-3 text-right">
+                    {new Date(prediction.created_at).toLocaleDateString(
+                      "ja-JP",
+                      {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      }
+                    )}
                   </Text>
                 </View>
-                <View style={styles.positionRow}>
-                  <View style={[styles.badge, styles.secondBadge]}>
-                    <Text style={styles.badgeText}>2着</Text>
-                  </View>
-                  <Text style={styles.horseName}>
-                    {prediction.second_position.name}
-                  </Text>
-                </View>
-                <View style={styles.positionRow}>
-                  <View style={[styles.badge, styles.thirdBadge]}>
-                    <Text style={styles.badgeText}>3着</Text>
-                  </View>
-                  <Text style={styles.horseName}>
-                    {prediction.third_position.name}
-                  </Text>
-                </View>
+              ))
+            ) : (
+              // 空状態
+              <View className="items-center py-12">
+                <Text className="text-6xl mb-4">🏇</Text>
+                <Text className="text-xl font-bold text-text-primary mb-2">
+                  まだ予想がありません
+                </Text>
+                <Text className="text-sm text-text-secondary text-center px-8">
+                  予想を投稿してレースを楽しみましょう！
+                </Text>
               </View>
-            </View>
-          ))
-        ) : (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyEmoji}>🏇</Text>
-            <Text style={styles.emptyTitle}>まだ予想がありません</Text>
-            <Text style={styles.emptyText}>予想を投稿してみましょう！</Text>
+            )}
           </View>
-        )}
-      </ScrollView>
-    </View>
+        </ScrollView>
+      )}
+
+      {/* タイムラインタブ */}
+      {activeTab === "timeline" && (
+        <View className="flex-1 px-4">
+          {/* フィルター */}
+          <View className="bg-white rounded-2xl p-4 mt-4 mb-4 shadow-lg">
+            <Text className="font-bold text-text-primary mb-3">
+              🔍 レースで絞り込み
+            </Text>
+            <View className="border border-border-light rounded-xl overflow-hidden">
+              <Picker
+                selectedValue={selectedRace}
+                onValueChange={handleFilterChange}
+                style={{ height: 50 }}
+              >
+                <Picker.Item label="すべてのレース" value="" />
+                {races.map((race) => (
+                  <Picker.Item
+                    key={race.id}
+                    label={race.name}
+                    value={String(race.id)}
+                  />
+                ))}
+              </Picker>
+            </View>
+          </View>
+
+          {/* タイムライン一覧 */}
+          <FlatList
+            data={timelinePredictions}
+            keyExtractor={(item) => String(item.id)}
+            refreshControl={
+              <RefreshControl
+                refreshing={timelineLoading}
+                onRefresh={() => loadTimelineData(selectedRace || undefined)}
+              />
+            }
+            contentContainerStyle={{ paddingBottom: 96 }}
+            renderItem={({ item }) => (
+              <View className="bg-white rounded-2xl p-4 mb-3 shadow-lg">
+                {/* ヘッダー */}
+                <View className="flex-row items-center mb-3">
+                  {/* プロフィール画像 */}
+                  {item.user.profile_image_url ? (
+                    <Image
+                      source={{ uri: item.user.profile_image_url }}
+                      className="w-12 h-12 rounded-full border border-border-light"
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View className="w-12 h-12 rounded-full bg-keiba-100 border border-border-light items-center justify-center">
+                      <Text className="text-keiba-600 font-bold">??</Text>
+                    </View>
+                  )}
+                  <View className="ml-3 flex-1">
+                    <Text className="text-xs text-text-secondary">
+                      {item.user.username} の予想
+                    </Text>
+                    <Text className="text-base font-bold text-keiba-600">
+                      {item.race_name}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* 予想内容 */}
+                <View className="bg-keiba-50 rounded-xl p-3 gap-y-2">
+                  <View className="flex-row items-center">
+                    <Text className="text-2xl mr-2">🥇</Text>
+                    <Text className="text-sm font-semibold text-text-primary">
+                      {item.first_position_name}
+                    </Text>
+                  </View>
+                  <View className="flex-row items-center">
+                    <Text className="text-2xl mr-2">🥈</Text>
+                    <Text className="text-sm font-semibold text-text-primary">
+                      {item.second_position_name}
+                    </Text>
+                  </View>
+                  <View className="flex-row items-center">
+                    <Text className="text-2xl mr-2">🥉</Text>
+                    <Text className="text-sm font-semibold text-text-primary">
+                      {item.third_position_name}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* 投稿日時 */}
+                <Text className="text-xs text-text-secondary mt-3 text-right">
+                  {new Date(item.created_at).toLocaleDateString("ja-JP", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </Text>
+              </View>
+            )}
+            ListEmptyComponent={
+              !timelineLoading ? (
+                <View className="bg-white rounded-2xl p-8 items-center shadow-lg">
+                  <Text className="text-6xl mb-4">👥</Text>
+                  <Text className="text-xl font-bold text-text-primary mb-2">
+                    まだ予想がありません
+                  </Text>
+                  <Text className="text-sm text-text-secondary text-center">
+                    フレンドをフォローして予想を見よう！
+                  </Text>
+                </View>
+              ) : null
+            }
+            ListFooterComponent={
+              timelineLoading ? (
+                <View className="py-4">
+                  <ActivityIndicator size="large" color="#22c55e" />
+                </View>
+              ) : null
+            }
+          />
+        </View>
+      )}
+    </LinearGradient>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background.secondary,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: Colors.background.secondary,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    padding: 16,
-    paddingBottom: 40,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: Colors.secondary.main,
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: Colors.neutral.gray800,
-    marginBottom: 16,
-  },
-  card: {
-    backgroundColor: Colors.neutral.white,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: Colors.neutral.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: Colors.neutral.gray800,
-    marginBottom: 12,
-  },
-  positions: {
-    gap: 8,
-  },
-  positionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  badge: {
-    width: 48,
-    paddingVertical: 4,
-    borderRadius: 4,
-    alignItems: "center",
-  },
-  firstBadge: {
-    backgroundColor: "#fbbf24",
-  },
-  secondBadge: {
-    backgroundColor: "#d1d5db",
-  },
-  thirdBadge: {
-    backgroundColor: "#cd7f32",
-  },
-  badgeText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: Colors.neutral.white,
-  },
-  horseName: {
-    fontSize: 14,
-    color: Colors.neutral.gray800,
-    flex: 1,
-  },
-  emptyContainer: {
-    padding: 32,
-    alignItems: "center",
-    backgroundColor: Colors.neutral.white,
-    borderRadius: 12,
-  },
-  emptyEmoji: {
-    fontSize: 64,
-    marginBottom: 16,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: Colors.neutral.gray800,
-    marginBottom: 8,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: Colors.neutral.gray600,
-    textAlign: "center",
-  },
-});

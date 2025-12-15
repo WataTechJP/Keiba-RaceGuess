@@ -1,15 +1,13 @@
-// src/components/prediction/RaceSelector.tsx (モーダル版)
+// src/components/prediction/RaceSelector.tsx (モーダル版 / nativewind)
 import React, { useState } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
   Modal,
   FlatList,
   Pressable,
 } from "react-native";
-import { Colors } from "../../constants/colors";
 
 interface Race {
   id: number;
@@ -37,23 +35,24 @@ export function RaceSelector({
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.label}>レース</Text>
+    <View className="mb-4">
+      <Text className="text-sm font-semibold text-gray-700 mb-2">レース</Text>
 
       {/* 選択ボタン */}
       <TouchableOpacity
-        style={styles.selectButton}
+        className="flex-row justify-between items-center bg-white border border-gray-300 rounded-lg px-4 py-4 min-h-[50px]"
         onPress={() => setModalVisible(true)}
+        activeOpacity={0.8}
       >
         <Text
-          style={[
-            styles.selectButtonText,
-            !selectedRace && styles.placeholderText,
-          ]}
+          className={`text-base flex-1 ${
+            selectedRace ? "text-gray-900" : "text-gray-500"
+          }`}
+          numberOfLines={1}
         >
           {selectedRace ? selectedRace.name : "レースを選択してください"}
         </Text>
-        <Text style={styles.arrow}>▼</Text>
+        <Text className="text-xs text-gray-600 ml-2">▼</Text>
       </TouchableOpacity>
 
       {/* モーダル */}
@@ -64,139 +63,66 @@ export function RaceSelector({
         onRequestClose={() => setModalVisible(false)}
       >
         <Pressable
-          style={styles.modalOverlay}
+          className="flex-1 bg-black/50 justify-center px-5"
           onPress={() => setModalVisible(false)}
         >
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>レースを選択</Text>
+          {/* ここで Pressable の外タップを検知して閉じる。
+              modalContent 内タップで閉じないように stopPropagation */}
+          <Pressable
+            className="bg-white rounded-2xl max-h-[60%] overflow-hidden"
+            onPress={(e) => e.stopPropagation()}
+          >
+            {/* ヘッダー */}
+            <View className="flex-row justify-between items-center px-5 py-5 border-b border-gray-200">
+              <Text className="text-lg font-semibold text-gray-900">
+                レースを選択
+              </Text>
+
               <TouchableOpacity
                 onPress={() => setModalVisible(false)}
-                style={styles.closeButton}
+                className="p-1"
+                activeOpacity={0.8}
               >
-                <Text style={styles.closeButtonText}>✕</Text>
+                <Text className="text-2xl text-gray-600">✕</Text>
               </TouchableOpacity>
             </View>
 
+            {/* リスト */}
             <FlatList
               data={races}
               keyExtractor={(item) => item.id.toString()}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[
-                    styles.raceItem,
-                    item.id === selectedRaceId && styles.selectedRaceItem,
-                  ]}
-                  onPress={() => handleSelect(item.id)}
-                >
-                  <Text
-                    style={[
-                      styles.raceItemText,
-                      item.id === selectedRaceId && styles.selectedRaceItemText,
-                    ]}
+              renderItem={({ item }) => {
+                const isSelected = item.id === selectedRaceId;
+
+                return (
+                  <TouchableOpacity
+                    className={`flex-row justify-between items-center px-4 py-4 border-b border-gray-100 ${
+                      isSelected ? "bg-emerald-50" : "bg-white"
+                    }`}
+                    onPress={() => handleSelect(item.id)}
+                    activeOpacity={0.85}
                   >
-                    {item.name}
-                  </Text>
-                  {item.id === selectedRaceId && (
-                    <Text style={styles.checkmark}>✓</Text>
-                  )}
-                </TouchableOpacity>
-              )}
+                    <Text
+                      className={`text-base ${
+                        isSelected
+                          ? "text-emerald-600 font-semibold"
+                          : "text-gray-900"
+                      }`}
+                      numberOfLines={1}
+                    >
+                      {item.name}
+                    </Text>
+
+                    {isSelected && (
+                      <Text className="text-xl text-emerald-600">✓</Text>
+                    )}
+                  </TouchableOpacity>
+                );
+              }}
             />
-          </View>
+          </Pressable>
         </Pressable>
       </Modal>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: Colors.neutral.gray700,
-    marginBottom: 8,
-  },
-  selectButton: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: Colors.neutral.white,
-    borderWidth: 1,
-    borderColor: Colors.neutral.gray300,
-    borderRadius: 8,
-    padding: 16,
-    minHeight: 50,
-  },
-  selectButtonText: {
-    fontSize: 16,
-    color: Colors.neutral.gray900,
-    flex: 1,
-  },
-  placeholderText: {
-    color: Colors.neutral.gray500,
-  },
-  arrow: {
-    fontSize: 12,
-    color: Colors.neutral.gray600,
-    marginLeft: 8,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    paddingHorizontal: 20,
-  },
-  modalContent: {
-    backgroundColor: Colors.neutral.white,
-    borderRadius: 16,
-    maxHeight: "60%",
-    overflow: "hidden",
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.neutral.gray200,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: Colors.neutral.gray900,
-  },
-  closeButton: {
-    padding: 4,
-  },
-  closeButtonText: {
-    fontSize: 24,
-    color: Colors.neutral.gray600,
-  },
-  raceItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.neutral.gray100,
-  },
-  selectedRaceItem: {
-    backgroundColor: Colors.primary.light,
-  },
-  raceItemText: {
-    fontSize: 16,
-    color: Colors.neutral.gray900,
-  },
-  selectedRaceItemText: {
-    color: Colors.primary.main,
-    fontWeight: "600",
-  },
-  checkmark: {
-    fontSize: 20,
-    color: Colors.primary.main,
-  },
-});

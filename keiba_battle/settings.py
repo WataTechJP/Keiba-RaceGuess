@@ -32,10 +32,18 @@ ALLOWED_HOSTS = ["localhost", "127.0.0.1", '192.168.1.100', "192.168.1.83"]
 
 # CORS設定
 CORS_ALLOWED_ORIGINS = [
+    "http://localhost:8083",
+    "http://127.0.0.1:8083",
+
     "http://localhost:8081",
-    "http://192.168.1.83:8081",  # ← iPhoneからのアクセス
-    "http://192.168.1.100:8000", # ← MacのDjango
+    "http://192.168.1.83:8081",
+    "http://192.168.1.100:8000",
+    "http://192.168.1.83:8000",
 ]
+
+# より柔軟なCORS設定（開発環境用）
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_ALL_ORIGINS = False  # セキュリティのため本番環境ではFalseにする
 
 # Application definition
 
