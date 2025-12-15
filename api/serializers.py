@@ -172,3 +172,46 @@ class UserPointSerializer(serializers.ModelSerializer):
         fields = ("id", "user", "points")
         read_only_fields = ("id", "user")
 
+
+class TimelinePredictionSerializer(serializers.ModelSerializer):
+    race_name = serializers.CharField(source="race.name", read_only=True)
+    first_position_name = serializers.CharField(
+        source="first_position.name", read_only=True
+    )
+    second_position_name = serializers.CharField(
+        source="second_position.name", read_only=True
+    )
+    third_position_name = serializers.CharField(
+        source="third_position.name", read_only=True
+    )
+    user = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Prediction
+        fields = (
+            "id",
+            "race_name",
+            "first_position_name",
+            "second_position_name",
+            "third_position_name",
+            "created_at",
+            "user",
+        )
+
+    def get_user(self, obj):
+        request = self.context.get("request")
+        profile_image_url = None
+
+        if hasattr(obj.user, "userprofile") and obj.user.userprofile.profile_image:
+            if request:
+                profile_image_url = request.build_absolute_uri(
+                    obj.user.userprofile.profile_image.url
+                )
+            else:
+                profile_image_url = obj.user.userprofile.profile_image.url
+
+        return {
+            "username": obj.user.username,
+            "profile_image_url": profile_image_url,
+        }
+

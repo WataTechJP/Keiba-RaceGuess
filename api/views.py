@@ -25,6 +25,7 @@ from .serializers import (
     GroupPredictionSerializer,
     PredictionGroupSerializer,
     PredictionSerializer,
+    TimelinePredictionSerializer,
     RaceResultSerializer,
     RaceSerializer,
     UserPointSerializer,
@@ -94,6 +95,40 @@ class PredictionViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="timeline",
+        permission_classes=[permissions.IsAuthenticated],
+    )
+    def timeline(self, request):
+        race_id = request.query_params.get("race_id")
+        following_ids = list(
+            request.user.following.values_list("followed_id", flat=True)
+        )
+        user_ids = following_ids + [request.user.id]
+
+        queryset = (
+            Prediction.objects.filter(user__id__in=user_ids)
+            .select_related(
+                "race",
+                "first_position",
+                "second_position",
+                "third_position",
+                "user",
+                "user__userprofile",
+            )
+            .order_by("-created_at")
+        )
+
+        if race_id:
+            queryset = queryset.filter(race_id=race_id)
+
+        serializer = TimelinePredictionSerializer(
+            queryset, many=True, context={"request": request}
+        )
+        return Response(serializer.data)
 
 
 class FollowViewSet(viewsets.ModelViewSet):

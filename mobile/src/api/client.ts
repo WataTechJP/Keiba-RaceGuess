@@ -1,7 +1,9 @@
+// src/api/client.ts (修正版A)
 import axios from 'axios';
 import Constants from 'expo-constants';
 
-const defaultUrl = 'http://127.0.0.1:8000/api/';
+// /api を削除
+const defaultUrl = 'http://127.0.0.1:8000';
 
 const apiUrl =
   Constants.expoConfig?.extra?.apiUrl ??
@@ -11,6 +13,9 @@ const apiUrl =
 const client = axios.create({
   baseURL: apiUrl,
   timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
 export const setAuthToken = (token?: string | null) => {
@@ -21,5 +26,16 @@ export const setAuthToken = (token?: string | null) => {
   }
 };
 
-export default client;
+client.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status === 401) {
+      const AsyncStorage = await import('@react-native-async-storage/async-storage');
+      await AsyncStorage.default.removeItem('authToken');
+      await AsyncStorage.default.removeItem('user');
+    }
+    return Promise.reject(error);
+  }
+);
 
+export default client;

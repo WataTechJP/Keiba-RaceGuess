@@ -13,7 +13,8 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.wattech.mobile"
     },
     "android": {
       "adaptiveIcon": {
@@ -21,14 +22,15 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.wattech.mobile"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "scheme": "keiba-battle",
     "extra": {
-      "apiUrl": "http://127.0.0.1:8000/api/"
+      "apiUrl": "http://192.168.1.83:8000"
     }
   }
 }

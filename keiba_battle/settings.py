@@ -26,8 +26,16 @@ SECRET_KEY = "django-insecure-wvjw-jr6^7_fdcc4@97q540*wail^!k9p$&&(_i$-r_==e4!v@
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", '192.168.1.100', "192.168.1.83"]
+# もしくは全許可（開発専用）
+# ALLOWED_HOSTS = ["*"]
 
+# CORS設定
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:8081",
+    "http://192.168.1.83:8081",  # ← iPhoneからのアクセス
+    "http://192.168.1.100:8000", # ← MacのDjango
+]
 
 # Application definition
 
@@ -42,6 +50,7 @@ INSTALLED_APPS = [
     "tailwind",
     "rest_framework",
     "rest_framework.authtoken",
+    "corsheaders", 
     # project apps
     "theme",
     "prediction",
@@ -58,6 +67,7 @@ INTERNAL_IPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",  # ← これを追加（CommonMiddlewareの前）
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
