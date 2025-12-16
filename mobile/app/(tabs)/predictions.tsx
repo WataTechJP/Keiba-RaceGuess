@@ -12,6 +12,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../../src/api/client";
 import type { Prediction } from "../../src/types/prediction";
+import PredictionCard from "../../src/components/prediction/PredictionCard";
 
 export default function PredictionsScreen() {
   const router = useRouter();
@@ -41,17 +42,16 @@ export default function PredictionsScreen() {
     loadPredictions();
   };
 
-  const handleDelete = async (predictionId: number) => {
-    Alert.alert("確認", "この予想を削除しますか？", [
+  const handleDelete = async (predictionId: number, raceName: string) => {
+    Alert.alert("確認", `${raceName}の予想を削除しますか？`, [
       { text: "キャンセル", style: "cancel" },
       {
         text: "削除",
         style: "destructive",
         onPress: async () => {
           try {
-            // NOTE: あなたのコードはここだけURLが違うので一旦そのまま
             await client.delete(`/predictions/${predictionId}/`);
-            Alert.alert("成功", "予想を削除しました");
+            Alert.alert("成功", `${raceName}の予想を削除しました`);
             loadPredictions();
           } catch (error) {
             console.error("削除エラー:", error);
@@ -62,73 +62,26 @@ export default function PredictionsScreen() {
     ]);
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return `${
-      date.getMonth() + 1
-    }/${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(
-      2,
-      "0"
-    )}`;
-  };
-
+  // ✅ PredictionCardコンポーネントを使う
   const renderPrediction = ({ item }: { item: Prediction }) => (
-    <View className="bg-white rounded-xl p-4 mb-3 shadow-sm">
-      {/* ヘッダー */}
-      <View className="flex-row justify-between items-start mb-4">
-        <View className="flex-1">
-          <Text className="text-base font-semibold text-gray-800 mb-1">
-            {item.race.name}
-          </Text>
-          <Text className="text-xs text-gray-500">
-            {formatDate(item.created_at)}
-          </Text>
-        </View>
-
-        <TouchableOpacity onPress={() => handleDelete(item.id)} className="p-1">
-          <Ionicons name="trash-outline" size={20} color="#ef4444" />
-        </TouchableOpacity>
-      </View>
-
-      {/* 予想内容 */}
-      <View>
-        {/* 1着 */}
-        <View className="flex-row items-center">
-          <View className="w-12 py-1 rounded items-center bg-amber-400">
-            <Text className="text-xs font-semibold text-white">1着</Text>
-          </View>
-          <Text className="ml-3 text-sm text-gray-800 flex-1">
-            {item.first_position.name}
-          </Text>
-        </View>
-
-        {/* 2着 */}
-        <View className="flex-row items-center mt-2">
-          <View className="w-12 py-1 rounded items-center bg-gray-300">
-            <Text className="text-xs font-semibold text-white">2着</Text>
-          </View>
-          <Text className="ml-3 text-sm text-gray-800 flex-1">
-            {item.second_position.name}
-          </Text>
-        </View>
-
-        {/* 3着 */}
-        <View className="flex-row items-center mt-2">
-          <View className="w-12 py-1 rounded items-center bg-[#cd7f32]">
-            <Text className="text-xs font-semibold text-white">3着</Text>
-          </View>
-          <Text className="ml-3 text-sm text-gray-800 flex-1">
-            {item.third_position.name}
-          </Text>
-        </View>
-      </View>
+    <View className="mb-3">
+      <PredictionCard
+        id={item.id}
+        race={item.race}
+        first_position={item.first_position}
+        second_position={item.second_position}
+        third_position={item.third_position}
+        created_at={item.created_at}
+        showDelete
+        onDelete={handleDelete}
+      />
     </View>
   );
 
   if (loading) {
     return (
       <View className="flex-1 items-center justify-center">
-        <Text>読み込み中...</Text>
+        <Text className="text-gray-600">読み込み中...</Text>
       </View>
     );
   }

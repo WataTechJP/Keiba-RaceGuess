@@ -29,9 +29,6 @@
       "favicon": "./assets/favicon.png"
     },
     "scheme": "keiba-battle",
-    "extra": {
-      "apiUrl": "http://192.168.1.83:8000"
-    },
     "plugins": [
       "expo-router"
     ]

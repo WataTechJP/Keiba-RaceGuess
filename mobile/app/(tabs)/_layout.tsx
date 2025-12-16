@@ -39,6 +39,7 @@ export default function TabsLayout() {
           headerTintColor: "#fff",
           headerStyle: {
             backgroundColor: "#87CEEB",
+            borderBottomWidth: 1,
           },
           headerTitleStyle: {
             fontWeight: "bold",
@@ -47,7 +48,7 @@ export default function TabsLayout() {
           tabBarStyle: {
             position: "absolute",
             backgroundColor: "#4CAF50",
-            borderTopWidth: 0,
+            borderTopWidth: 1,
             elevation: 0,
             paddingBottom: 8,
             paddingTop: 8,

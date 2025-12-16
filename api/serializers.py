@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
+from django.conf import settings
 
 from prediction.models import (
     Follow,
@@ -172,7 +173,6 @@ class UserPointSerializer(serializers.ModelSerializer):
         fields = ("id", "user", "points")
         read_only_fields = ("id", "user")
 
-
 class TimelinePredictionSerializer(serializers.ModelSerializer):
     race_name = serializers.CharField(source="race.name", read_only=True)
     first_position_name = serializers.CharField(
@@ -200,8 +200,11 @@ class TimelinePredictionSerializer(serializers.ModelSerializer):
 
     def get_user(self, obj):
         request = self.context.get("request")
-        profile_image_url = None
+        
+        # デフォルト画像のパス
+        DEFAULT_PROFILE_IMAGE = "profile_images/default-image.jpg"
 
+        # プロフィール画像が存在する場合
         if hasattr(obj.user, "userprofile") and obj.user.userprofile.profile_image:
             if request:
                 profile_image_url = request.build_absolute_uri(
@@ -209,9 +212,16 @@ class TimelinePredictionSerializer(serializers.ModelSerializer):
                 )
             else:
                 profile_image_url = obj.user.userprofile.profile_image.url
+        else:
+            # プロフィール画像がない場合、デフォルト画像を使用
+            if request:
+                profile_image_url = request.build_absolute_uri(
+                    f"{settings.MEDIA_URL}{DEFAULT_PROFILE_IMAGE}"
+                )
+            else:
+                profile_image_url = f"{settings.MEDIA_URL}{DEFAULT_PROFILE_IMAGE}"
 
         return {
             "username": obj.user.username,
             "profile_image_url": profile_image_url,
         }
-

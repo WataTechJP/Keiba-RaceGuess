@@ -1,7 +1,7 @@
-// src/contexts/AuthContext.tsx (既存画面対応版)
+// src/contexts/AuthContext.tsx
 import React, { createContext, useState, useContext, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import client from "../api/client";
+import client, { setAuthToken } from "../api/client";
 
 interface User {
   id: number;
@@ -40,11 +40,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // トークンが変更されたらヘッダーにセット
   useEffect(() => {
     if (token) {
-      client.defaults.headers.common["Authorization"] = `Token ${token}`;
-      console.log("🔑 Token set in headers");
+      setAuthToken(token);
+      console.log("🔑 Token set in headers:", token.substring(0, 10) + "...");
     } else {
-      delete client.defaults.headers.common["Authorization"];
-      console.log("🔓 Token removed from headers");
+      setAuthToken(null);
     }
   }, [token]);
 
@@ -54,9 +53,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const storedUser = await AsyncStorage.getItem("user");
 
       if (storedToken && storedUser) {
+        console.log(
+          "📦 Found stored token:",
+          storedToken.substring(0, 10) + "..."
+        );
+
+        // 先にトークンをヘッダーにセット
+        setAuthToken(storedToken);
+
+        // その後stateを更新
         setToken(storedToken);
         setUser(JSON.parse(storedUser));
+
         console.log("✅ Auth restored from storage");
+      } else {
+        console.log("❌ No stored auth found");
       }
     } catch (error) {
       console.error("❌ Error loading auth:", error);
@@ -75,6 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true);
       setError(null);
+
       console.log("🔐 Logging in:", username);
 
       const response = await client.post("/api/auth/login/", {
@@ -88,14 +100,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await AsyncStorage.setItem("authToken", newToken);
       await AsyncStorage.setItem("user", JSON.stringify(newUser));
 
+      // 先にトークンをヘッダーにセット
+      setAuthToken(newToken);
+
+      // その後stateを更新
       setToken(newToken);
       setUser(newUser);
 
       console.log("✅ Login successful:", newUser.username);
     } catch (err: any) {
-      console.error("❌ Login error:", err.response?.data);
-      const errorMessage =
-        err.response?.data?.error || "ログインに失敗しました";
+      console.error("❌ Full error object:", err);
+
+      let errorMessage = "ログインに失敗しました";
+
+      if (err.response) {
+        errorMessage =
+          err.response?.data?.error ||
+          err.response?.data?.detail ||
+          `エラー: ${err.response.status}`;
+      } else if (err.request) {
+        errorMessage =
+          "サーバーに接続できません。ネットワークを確認してください";
+      } else {
+        errorMessage = err.message || "予期しないエラーが発生しました";
+      }
+
       setError(errorMessage);
       throw new Error(errorMessage);
     } finally {
@@ -115,6 +144,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true);
       setError(null);
+
       console.log("📝 Registering:", username);
 
       const response = await client.post("/api/auth/register/", {
@@ -129,13 +159,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await AsyncStorage.setItem("authToken", newToken);
       await AsyncStorage.setItem("user", JSON.stringify(newUser));
 
+      // 先にトークンをヘッダーにセット
+      setAuthToken(newToken);
+
+      // その後stateを更新
       setToken(newToken);
       setUser(newUser);
 
       console.log("✅ Registration successful:", newUser.username);
     } catch (err: any) {
-      console.error("❌ Registration error:", err.response?.data);
-      const errorMessage = err.response?.data?.error || "登録に失敗しました";
+      console.error("❌ Full registration error:", err);
+
+      let errorMessage = "登録に失敗しました";
+
+      if (err.response) {
+        errorMessage =
+          err.response?.data?.error ||
+          err.response?.data?.detail ||
+          `エラー: ${err.response.status}`;
+      } else if (err.request) {
+        errorMessage =
+          "サーバーに接続できません。ネットワークを確認してください";
+      } else {
+        errorMessage = err.message || "予期しないエラーが発生しました";
+      }
+
       setError(errorMessage);
       throw new Error(errorMessage);
     } finally {
@@ -152,6 +200,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       // ローカルのデータをクリア
       await AsyncStorage.multiRemove(["authToken", "user"]);
+      setAuthToken(null);
       setToken(null);
       setUser(null);
       setError(null);

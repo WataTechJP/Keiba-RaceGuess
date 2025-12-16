@@ -26,20 +26,27 @@ SECRET_KEY = "django-insecure-wvjw-jr6^7_fdcc4@97q540*wail^!k9p$&&(_i$-r_==e4!v@
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", '192.168.1.100', "192.168.1.83"]
+# ALLOWED_HOSTS = ["localhost", "127.0.0.1", '192.168.1.100', "192.168.1.83"]
+ALLOWED_HOSTS = ['*']
 # もしくは全許可（開発専用）
 # ALLOWED_HOSTS = ["*"]
 
 # CORS設定
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:8083",
-    "http://127.0.0.1:8083",
+# CORS_ALLOWED_ORIGINS = [
+#     "http://localhost:8083",
+#     "http://127.0.0.1:8083",
+#     "http://localhost:8082",
+#     "http://127.0.0.1:8082",
+#     "http://172.20.10.3:8082",
+    
 
-    "http://localhost:8081",
-    "http://192.168.1.83:8081",
-    "http://192.168.1.100:8000",
-    "http://192.168.1.83:8000",
-]
+#     "http://localhost:8081",
+#     "http://192.168.1.83:8081",
+#     "http://192.168.1.83:8082",
+#     "http://192.168.1.100:8000",
+#     "http://192.168.1.83:8000",
+# ]
+CORS_ALLOW_ALL_ORIGINS = True
 
 # より柔軟なCORS設定（開発環境用）
 CORS_ALLOW_CREDENTIALS = True

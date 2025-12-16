@@ -1,20 +1,22 @@
+// app/(tabs)/index.tsx
 import React, { useState, useEffect } from "react";
 import {
   View,
   ScrollView,
   Text,
   RefreshControl,
+  Alert,
   ActivityIndicator,
   TouchableOpacity,
   FlatList,
   Image,
 } from "react-native";
-import { Picker } from "@react-native-picker/picker";
 import { useRouter } from "expo-router";
 import client from "../../src/api/client";
-import { LinearGradient } from "expo-linear-gradient";
+import { RaceSelector } from "../../src/components/prediction/RaceSelector";
+import PredictionCard from "../../src/components/prediction/PredictionCard";
 
-interface Prediction {
+type Prediction = {
   id: number;
   race: {
     id: number;
@@ -33,9 +35,9 @@ interface Prediction {
     name: string;
   };
   created_at: string;
-}
+};
 
-interface TimelinePrediction {
+type TimelinePrediction = {
   id: number;
   race_name: string;
   first_position_name: string;
@@ -46,12 +48,12 @@ interface TimelinePrediction {
     username: string;
     profile_image_url?: string;
   };
-}
+};
 
-interface Race {
+type Race = {
   id: number;
   name: string;
-}
+};
 
 type TabType = "my" | "timeline";
 
@@ -68,6 +70,8 @@ export default function HomeScreen() {
 
   // タイムライン
   const [races, setRaces] = useState<Race[]>([]);
+  const [selectedRaceId, setSelectedRaceId] = useState<number | null>(null);
+
   const [timelinePredictions, setTimelinePredictions] = useState<
     TimelinePrediction[]
   >([]);
@@ -129,6 +133,26 @@ export default function HomeScreen() {
     loadMyPredictions();
   };
 
+  const handleDelete = async (predictionId: number, raceName: string) => {
+    Alert.alert("確認", `${raceName}の予想を削除しますか？`, [
+      { text: "キャンセル", style: "cancel" },
+      {
+        text: "削除",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await client.delete(`/predictions/${predictionId}/`);
+            Alert.alert("成功", `${raceName}の予想を削除しました`);
+            loadMyPredictions();
+          } catch (error) {
+            console.error("削除エラー:", error);
+            Alert.alert("エラー", "予想の削除に失敗しました");
+          }
+        },
+      },
+    ]);
+  };
+
   const handleFilterChange = (value: string) => {
     setSelectedRace(value);
     loadTimelineData(value || undefined);
@@ -148,124 +172,67 @@ export default function HomeScreen() {
   }
 
   return (
-    <LinearGradient
-      colors={["#87CEEB", "#4CAF50"]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 0, y: 1 }}
-      style={{ flex: 1 }}
-    >
+    <View className="flex-1 bg-transparent px-4">
       {/* タブ切り替え */}
-      <View className="flex-row bg-white mx-4 mt-4 rounded-2xl p-1 shadow-lg">
+      <View className="flex-row bg-white mt-4 mb-2 rounded-2xl p-1 shadow-lg">
         <TouchableOpacity
-          className={`flex-1 py-3 rounded-xl ${
+          className={`flex-1 py-2 rounded-xl ${
             activeTab === "my" ? "bg-keiba-500" : "bg-transparent"
           }`}
           onPress={() => setActiveTab("my")}
         >
           <Text
-            className={`text-center font-bold ${
+            className={`text-base text-center font-bold ${
               activeTab === "my" ? "text-white" : "text-text-secondary"
             }`}
           >
-            🏇 俺の予想
+            My予想
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          className={`flex-1 py-3 rounded-xl ${
+          className={`flex-1 py-2 rounded-xl ${
             activeTab === "timeline" ? "bg-keiba-500" : "bg-transparent"
           }`}
           onPress={() => setActiveTab("timeline")}
         >
           <Text
-            className={`text-center font-bold ${
+            className={`text-base text-center font-bold ${
               activeTab === "timeline" ? "text-white" : "text-text-secondary"
             }`}
           >
-            🕒 タイムライン
+            TimeLine
           </Text>
         </TouchableOpacity>
       </View>
 
-      {/* 俺の予想タブ */}
+      {/* My予想タブ */}
       {activeTab === "my" && (
         <ScrollView
           className="flex-1"
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 96 }}
+          contentContainerStyle={{ paddingBottom: 96 }}
           refreshControl={
             <RefreshControl refreshing={myRefreshing} onRefresh={onMyRefresh} />
           }
         >
           {/* 予想一覧セクション */}
-          <View className="bg-white rounded-2xl p-4 mt-4 shadow-lg">
-            <Text className="text-xl font-bold text-text-primary mb-4">
-              📋 俺の予想
+          <View className="bg-white rounded-2xl p-3 mb-2 shadow-lg">
+            <Text className="text-xl font-bold text-text-primary mb-3">
+              My予想
             </Text>
 
             {myPredictions.length > 0 ? (
-              myPredictions.map((prediction, index) => (
-                <View
-                  key={prediction.id}
-                  className={`bg-keiba-50 rounded-xl p-4 ${
-                    index < myPredictions.length - 1 ? "mb-3" : ""
-                  }`}
-                >
-                  {/* レース名 */}
-                  <Text className="text-base font-bold text-text-primary mb-3">
-                    {prediction.race.name}
-                  </Text>
-
-                  {/* 予想順位 */}
-                  <View className="gap-y-2">
-                    {/* 1着 */}
-                    <View className="flex-row items-center">
-                      <View className="bg-yellow-400 rounded-lg px-3 py-2 w-14 items-center">
-                        <Text className="text-xs font-bold text-white">
-                          1着
-                        </Text>
-                      </View>
-                      <Text className="text-sm text-text-primary font-semibold ml-3 flex-1">
-                        {prediction.first_position.name}
-                      </Text>
-                    </View>
-
-                    {/* 2着 */}
-                    <View className="flex-row items-center">
-                      <View className="bg-gray-400 rounded-lg px-3 py-2 w-14 items-center">
-                        <Text className="text-xs font-bold text-white">
-                          2着
-                        </Text>
-                      </View>
-                      <Text className="text-sm text-text-primary font-semibold ml-3 flex-1">
-                        {prediction.second_position.name}
-                      </Text>
-                    </View>
-
-                    {/* 3着 */}
-                    <View className="flex-row items-center">
-                      <View className="bg-orange-600 rounded-lg px-3 py-2 w-14 items-center">
-                        <Text className="text-xs font-bold text-white">
-                          3着
-                        </Text>
-                      </View>
-                      <Text className="text-sm text-text-primary font-semibold ml-3 flex-1">
-                        {prediction.third_position.name}
-                      </Text>
-                    </View>
-                  </View>
-
-                  {/* 投稿日時 */}
-                  <Text className="text-xs text-text-secondary mt-3 text-right">
-                    {new Date(prediction.created_at).toLocaleDateString(
-                      "ja-JP",
-                      {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      }
-                    )}
-                  </Text>
+              myPredictions.map((prediction) => (
+                <View key={prediction.id} className="mb-3">
+                  <PredictionCard
+                    id={prediction.id}
+                    race={prediction.race}
+                    first_position={prediction.first_position}
+                    second_position={prediction.second_position}
+                    third_position={prediction.third_position}
+                    created_at={prediction.created_at}
+                    showDelete
+                    onDelete={handleDelete}
+                  />
                 </View>
               ))
             ) : (
@@ -286,28 +253,17 @@ export default function HomeScreen() {
 
       {/* タイムラインタブ */}
       {activeTab === "timeline" && (
-        <View className="flex-1 px-4">
+        <View className="flex-1">
           {/* フィルター */}
-          <View className="bg-white rounded-2xl p-4 mt-4 mb-4 shadow-lg">
-            <Text className="font-bold text-text-primary mb-3">
-              🔍 レースで絞り込み
+          <View className="bg-white rounded-2xl p-3 mb-2 shadow-lg">
+            <Text className="text-xl font-bold text-text-primary mb-1">
+              TimeLine
             </Text>
-            <View className="border border-border-light rounded-xl overflow-hidden">
-              <Picker
-                selectedValue={selectedRace}
-                onValueChange={handleFilterChange}
-                style={{ height: 50 }}
-              >
-                <Picker.Item label="すべてのレース" value="" />
-                {races.map((race) => (
-                  <Picker.Item
-                    key={race.id}
-                    label={race.name}
-                    value={String(race.id)}
-                  />
-                ))}
-              </Picker>
-            </View>
+            <RaceSelector
+              races={races}
+              selectedRaceId={selectedRaceId}
+              onRaceChange={setSelectedRaceId}
+            />
           </View>
 
           {/* タイムライン一覧 */}
@@ -322,63 +278,17 @@ export default function HomeScreen() {
             }
             contentContainerStyle={{ paddingBottom: 96 }}
             renderItem={({ item }) => (
-              <View className="bg-white rounded-2xl p-4 mb-3 shadow-lg">
-                {/* ヘッダー */}
-                <View className="flex-row items-center mb-3">
-                  {/* プロフィール画像 */}
-                  {item.user.profile_image_url ? (
-                    <Image
-                      source={{ uri: item.user.profile_image_url }}
-                      className="w-12 h-12 rounded-full border border-border-light"
-                      resizeMode="cover"
-                    />
-                  ) : (
-                    <View className="w-12 h-12 rounded-full bg-keiba-100 border border-border-light items-center justify-center">
-                      <Text className="text-keiba-600 font-bold">??</Text>
-                    </View>
-                  )}
-                  <View className="ml-3 flex-1">
-                    <Text className="text-xs text-text-secondary">
-                      {item.user.username} の予想
-                    </Text>
-                    <Text className="text-base font-bold text-keiba-600">
-                      {item.race_name}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* 予想内容 */}
-                <View className="bg-keiba-50 rounded-xl p-3 gap-y-2">
-                  <View className="flex-row items-center">
-                    <Text className="text-2xl mr-2">🥇</Text>
-                    <Text className="text-sm font-semibold text-text-primary">
-                      {item.first_position_name}
-                    </Text>
-                  </View>
-                  <View className="flex-row items-center">
-                    <Text className="text-2xl mr-2">🥈</Text>
-                    <Text className="text-sm font-semibold text-text-primary">
-                      {item.second_position_name}
-                    </Text>
-                  </View>
-                  <View className="flex-row items-center">
-                    <Text className="text-2xl mr-2">🥉</Text>
-                    <Text className="text-sm font-semibold text-text-primary">
-                      {item.third_position_name}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* 投稿日時 */}
-                <Text className="text-xs text-text-secondary mt-3 text-right">
-                  {new Date(item.created_at).toLocaleDateString("ja-JP", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </Text>
+              <View className="mb-3">
+                <PredictionCard
+                  id={item.id}
+                  race_name={item.race_name}
+                  first_position_name={item.first_position_name}
+                  second_position_name={item.second_position_name}
+                  third_position_name={item.third_position_name}
+                  created_at={item.created_at}
+                  user={item.user}
+                  variant="others"
+                />
               </View>
             )}
             ListEmptyComponent={
@@ -404,6 +314,6 @@ export default function HomeScreen() {
           />
         </View>
       )}
-    </LinearGradient>
+    </View>
   );
 }
