@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { View, ScrollView, Text, Alert, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { RaceSelector } from "../../src/components/prediction/RaceSelector";
 import { HorseSelector } from "../../src/components/prediction/HorseSelector";
 import { Button } from "../../src/components/common/Button";
@@ -63,6 +64,15 @@ export default function SubmitPredictionScreen() {
     }
   };
 
+  // ✅ 選択全解除
+  const handleClearAll = () => {
+    setSelectedRaceId(null);
+    setFirstPosition(null);
+    setSecondPosition(null);
+    setThirdPosition(null);
+    setHorses([]);
+  };
+
   const handleSubmit = async () => {
     if (!selectedRaceId) {
       Alert.alert("エラー", "レースを選択してください");
@@ -82,18 +92,15 @@ export default function SubmitPredictionScreen() {
         third_position: thirdPosition,
       });
 
-      setSelectedRaceId(null);
-      setFirstPosition(null);
-      setSecondPosition(null);
-      setThirdPosition(null);
-      setHorses([]);
+      // 投稿成功後にクリア
+      handleClearAll();
 
-      Alert.alert("成功", "予想を投稿しました");
+      Alert.alert("Good Luck!", "予想を投稿しました");
     } catch (error: any) {
       console.error("❌ 予想投稿エラー:", error);
       const errorMessage =
         error.response?.data?.detail || "予想の投稿に失敗しました";
-      Alert.alert("エラー", errorMessage);
+      Alert.alert("Error", errorMessage);
     } finally {
       setLoading(false);
     }
@@ -112,16 +119,36 @@ export default function SubmitPredictionScreen() {
     return disabled;
   };
 
+  // 何か選択されているか
+  const hasSelection =
+    selectedRaceId || firstPosition || secondPosition || thirdPosition;
+
   return (
     <View className="flex-1 bg-transparent">
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
       >
-        {/* タイトル */}
-        <Text className="text-2xl font-bold text-emerald-600 mb-6">
-          予想を投稿
-        </Text>
+        {/* ヘッダー */}
+        <View className="flex-row justify-between items-center mb-6">
+          <Text className="text-2xl font-bold text-emerald-600">
+            予想を投稿
+          </Text>
+
+          {/* 選択全解除ボタン */}
+          {hasSelection && (
+            <TouchableOpacity
+              onPress={handleClearAll}
+              className="flex-row items-center bg-gray-100 px-3 py-2 rounded-lg"
+              activeOpacity={0.7}
+            >
+              <Ionicons name="close-circle-outline" size={18} color="#6b7280" />
+              <Text className="text-sm text-gray-600 ml-1 font-medium">
+                クリア
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
         {/* レース選択 */}
         <RaceSelector
@@ -184,8 +211,6 @@ export default function SubmitPredictionScreen() {
               !secondPosition ||
               !thirdPosition
             }
-            // Buttonが style を受け取れる前提で Tailwind風に寄せるならこういう値を渡す
-            // ただし Button の実装次第なので、必要なら Button 側を className 対応にするのが正解
             style={{ marginTop: 0 }}
           />
         </View>
@@ -196,7 +221,7 @@ export default function SubmitPredictionScreen() {
           className="mt-4 items-center"
           activeOpacity={0.8}
         >
-          <Text className="text-sm text-white">→ 予想一覧へ</Text>
+          <Text className="text-sm text-white font-medium">→ 予想一覧へ</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>

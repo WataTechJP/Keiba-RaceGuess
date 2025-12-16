@@ -1,12 +1,11 @@
-// src/types/friends.ts
-export interface User {
+export type User = {
   id: number;
   username: string;
   email: string;
   bio?: string;
-}
+};
 
-export interface FriendsData {
+export type FriendsData = {
   users: User[];
   followed_users: number[];
 }

@@ -78,7 +78,7 @@ export default function TabsLayout() {
           }}
         />
 
-        {/* 予想一覧 */}
+        {/* 予想一覧
         <Tabs.Screen
           name="predictions"
           options={{
@@ -98,29 +98,7 @@ export default function TabsLayout() {
               </RNText>
             ),
           }}
-        />
-
-        {/* 投稿 */}
-        <Tabs.Screen
-          name="submit"
-          options={{
-            title: "投稿",
-            tabBarIcon: ({ size, color }) => (
-              <Ionicons name="add-circle" size={size} color={color} />
-            ),
-            tabBarLabel: ({ focused }) => (
-              <RNText
-                style={{
-                  fontSize: 11,
-                  fontWeight: "600",
-                  color: focused ? "#8D6E63" : "#fff",
-                }}
-              >
-                投稿
-              </RNText>
-            ),
-          }}
-        />
+        /> */}
 
         {/* フレンド（長押し対応） - 修正版 */}
         <Tabs.Screen
@@ -159,6 +137,50 @@ export default function TabsLayout() {
                 }}
               >
                 フレンド
+              </RNText>
+            ),
+          }}
+        />
+
+        {/* 投稿 */}
+        <Tabs.Screen
+          name="submit"
+          options={{
+            title: "投稿",
+            tabBarIcon: ({ size, color }) => (
+              <Ionicons name="add-circle" size={size} color={color} />
+            ),
+            tabBarLabel: ({ focused }) => (
+              <RNText
+                style={{
+                  fontSize: 11,
+                  fontWeight: "600",
+                  color: focused ? "#8D6E63" : "#fff",
+                }}
+              >
+                投稿
+              </RNText>
+            ),
+          }}
+        />
+
+        {/* 結果 */}
+        <Tabs.Screen
+          name="results"
+          options={{
+            title: "結果",
+            tabBarIcon: ({ size, color }) => (
+              <Ionicons name="trophy" size={size} color={color} />
+            ),
+            tabBarLabel: ({ focused }) => (
+              <RNText
+                style={{
+                  fontSize: 11,
+                  fontWeight: "600",
+                  color: focused ? "#8D6E63" : "#fff",
+                }}
+              >
+                結果
               </RNText>
             ),
           }}

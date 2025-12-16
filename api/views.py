@@ -4,7 +4,8 @@ from rest_framework import generics, permissions, viewsets
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -224,3 +225,45 @@ class UserPointViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         return UserPoint.objects.filter(user=self.request.user)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def user_profile(request):
+    """現在のユーザーのプロフィール詳細を取得"""
+    user = request.user
+    
+    # 統計情報を集計
+    predictions_count = Prediction.objects.filter(user=user).count()
+    followers_count = Follow.objects.filter(followed=user).count()
+    
+    # ポイントを取得
+    try:
+        user_point = UserPoint.objects.get(user=user)
+        points = user_point.points
+    except UserPoint.DoesNotExist:
+        points = 0
+    
+    # プロフィール画像URLを取得
+    profile_image_url = None
+    DEFAULT_IMAGE = "profile_images/default-image.jpg"
+    
+    if hasattr(user, 'userprofile') and user.userprofile.profile_image:
+        profile_image_url = request.build_absolute_uri(user.userprofile.profile_image.url)
+    else:
+        # デフォルト画像
+        profile_image_url = request.build_absolute_uri(f"{settings.MEDIA_URL}{DEFAULT_IMAGE}")
+    
+    return Response({
+        'id': user.id,
+        'username': user.username,
+        'email': user.email,
+        'profile': {
+            'profile_image_url': profile_image_url,
+            'updated_at': user.userprofile.updated_at if hasattr(user, 'userprofile') else None,
+        },
+        'predictions_count': predictions_count,
+        'followers_count': followers_count,
+        'hit_rate': 0,  # TODO: 的中率の計算ロジックを追加
+        'points': points,
+    })

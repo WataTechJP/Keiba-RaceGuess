@@ -1,4 +1,3 @@
-// app/(tabs)/index.tsx
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -15,45 +14,11 @@ import { useRouter } from "expo-router";
 import client from "../../src/api/client";
 import { RaceSelector } from "../../src/components/prediction/RaceSelector";
 import PredictionCard from "../../src/components/prediction/PredictionCard";
-
-type Prediction = {
-  id: number;
-  race: {
-    id: number;
-    name: string;
-  };
-  first_position: {
-    id: number;
-    name: string;
-  };
-  second_position: {
-    id: number;
-    name: string;
-  };
-  third_position: {
-    id: number;
-    name: string;
-  };
-  created_at: string;
-};
-
-type TimelinePrediction = {
-  id: number;
-  race_name: string;
-  first_position_name: string;
-  second_position_name: string;
-  third_position_name: string;
-  created_at: string;
-  user: {
-    username: string;
-    profile_image_url?: string;
-  };
-};
-
-type Race = {
-  id: number;
-  name: string;
-};
+import type {
+  Race,
+  Prediction,
+  TimelinePrediction,
+} from "../../src/types/prediction";
 
 type TabType = "my" | "timeline";
 
@@ -134,7 +99,7 @@ export default function HomeScreen() {
   };
 
   const handleDelete = async (predictionId: number, raceName: string) => {
-    Alert.alert("確認", `${raceName}の予想を削除しますか？`, [
+    Alert.alert("Delete", `${raceName}の予想を削除しますか？`, [
       { text: "キャンセル", style: "cancel" },
       {
         text: "削除",
@@ -142,20 +107,15 @@ export default function HomeScreen() {
         onPress: async () => {
           try {
             await client.delete(`/predictions/${predictionId}/`);
-            Alert.alert("成功", `${raceName}の予想を削除しました`);
+            Alert.alert("Deleted", `${raceName}の予想を削除しました`);
             loadMyPredictions();
           } catch (error) {
             console.error("削除エラー:", error);
-            Alert.alert("エラー", "予想の削除に失敗しました");
+            Alert.alert("Error", "予想の削除に失敗しました");
           }
         },
       },
     ]);
-  };
-
-  const handleFilterChange = (value: string) => {
-    setSelectedRace(value);
-    loadTimelineData(value || undefined);
   };
 
   if (myLoading && activeTab === "my") {
@@ -174,7 +134,7 @@ export default function HomeScreen() {
   return (
     <View className="flex-1 bg-transparent px-4">
       {/* タブ切り替え */}
-      <View className="flex-row bg-white mt-4 mb-2 rounded-2xl p-1 shadow-lg">
+      <View className="flex-row bg-white mt-4 mb-1 rounded-2xl p-1 shadow-lg">
         <TouchableOpacity
           className={`flex-1 py-2 rounded-xl ${
             activeTab === "my" ? "bg-keiba-500" : "bg-transparent"
@@ -215,14 +175,10 @@ export default function HomeScreen() {
           }
         >
           {/* 予想一覧セクション */}
-          <View className="bg-white rounded-2xl p-3 mb-2 shadow-lg">
-            <Text className="text-xl font-bold text-text-primary mb-3">
-              My予想
-            </Text>
-
+          <View className="bg-transparent rounded-2xl shadow-lg">
             {myPredictions.length > 0 ? (
               myPredictions.map((prediction) => (
-                <View key={prediction.id} className="mb-3">
+                <View key={prediction.id} className="mb-1">
                   <PredictionCard
                     id={prediction.id}
                     race={prediction.race}
@@ -255,10 +211,7 @@ export default function HomeScreen() {
       {activeTab === "timeline" && (
         <View className="flex-1">
           {/* フィルター */}
-          <View className="bg-white rounded-2xl p-3 mb-2 shadow-lg">
-            <Text className="text-xl font-bold text-text-primary mb-1">
-              TimeLine
-            </Text>
+          <View className="bg-transparent rounded-2xl shadow-lg">
             <RaceSelector
               races={races}
               selectedRaceId={selectedRaceId}
@@ -278,7 +231,7 @@ export default function HomeScreen() {
             }
             contentContainerStyle={{ paddingBottom: 96 }}
             renderItem={({ item }) => (
-              <View className="mb-3">
+              <View className="mb-1">
                 <PredictionCard
                   id={item.id}
                   race_name={item.race_name}

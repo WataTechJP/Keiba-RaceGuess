@@ -3,6 +3,7 @@ import React from "react";
 import { View, Text, TouchableOpacity, Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Constants from "expo-constants";
+import type { User } from "../../types/user";
 
 type Horse = {
   id: number;
@@ -12,11 +13,6 @@ type Horse = {
 type Race = {
   id: number;
   name: string;
-};
-
-type User = {
-  username: string;
-  profile_image_url?: string;
 };
 
 type PredictionCardProps = {
@@ -114,7 +110,7 @@ export default function PredictionCard({
 
   return (
     <CardWrapper {...cardProps}>
-      <View className="bg-keiba-500 rounded-xl p-2 shadow-sm">
+      <View className="bg-green-100 rounded-xl p-2 shadow-sm">
         {/* タイムライン用ヘッダー（ユーザー情報） */}
         {variant === "others" && user && (
           <View className="flex-row items-center mb-1">
