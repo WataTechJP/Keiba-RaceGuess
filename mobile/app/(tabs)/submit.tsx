@@ -9,6 +9,21 @@ import { Button } from "../../src/components/common/Button";
 import client from "../../src/api/client";
 import type { Race, Horse } from "../../src/types/prediction";
 
+function formatRemaining(ms: number) {
+  if (ms <= 0) return "投票締切済み";
+
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+
+  // 例: 5h 03m 09s
+  return `残り${h}h ${String(m).padStart(2, "0")}m ${String(s).padStart(
+    2,
+    "0"
+  )}s`;
+}
+
 export default function SubmitPredictionScreen() {
   const router = useRouter();
 
@@ -20,11 +35,26 @@ export default function SubmitPredictionScreen() {
   const [secondPosition, setSecondPosition] = useState<number | null>(null);
   const [thirdPosition, setThirdPosition] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
+  const selectedRace = races.find(
+    (r) => String(r.id) === String(selectedRaceId)
+  );
+  const deadline = selectedRace?.date ? new Date(selectedRace.date) : null;
+
+  const [now, setNow] = useState<Date>(new Date());
 
   // レース一覧を読み込み
   useEffect(() => {
     loadRaces();
   }, []);
+
+  useEffect(() => {
+    if (!deadline) return;
+
+    const t = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(t);
+  }, [selectedRaceId, selectedRace?.date]);
+
+  const isClosed = deadline ? deadline.getTime() - now.getTime() <= 0 : false;
 
   // レース選択時に馬一覧を読み込み
   useEffect(() => {
@@ -50,7 +80,6 @@ export default function SubmitPredictionScreen() {
       Alert.alert("エラー", "レース一覧の読み込みに失敗しました");
     }
   };
-
   const loadHorses = async (raceId: number) => {
     try {
       const response = await client.get(`/api/horses/?race_id=${raceId}`);
@@ -131,8 +160,8 @@ export default function SubmitPredictionScreen() {
       >
         {/* ヘッダー */}
         <View className="flex-row justify-between items-center mb-6">
-          <Text className="text-2xl font-bold text-emerald-600">
-            予想を投稿
+          <Text className="flex text-2xl items-center font-bold text-emerald-600">
+            Trust your instincts.
           </Text>
 
           {/* 選択全解除ボタン */}
@@ -156,6 +185,18 @@ export default function SubmitPredictionScreen() {
           selectedRaceId={selectedRaceId}
           onRaceChange={setSelectedRaceId}
         />
+
+        {/* 締切 & 残り時間 */}
+        {deadline && (
+          <View className="mt-3 p-4 bg-white/20 rounded-xl">
+            <Text className="text-sm text-accent-red font-semibold">
+              締切時刻: {deadline.toLocaleString("ja-JP")}
+            </Text>
+            <Text className="text-lg text-accent-red font-bold mt-1">
+              {formatRemaining(deadline.getTime() - now.getTime())}
+            </Text>
+          </View>
+        )}
 
         {/* 馬選択 */}
         {selectedRaceId && horses.length > 0 && (
@@ -202,14 +243,13 @@ export default function SubmitPredictionScreen() {
         {/* 投稿ボタン */}
         <View className="mt-6">
           <Button
-            title="投稿する"
+            title={isClosed ? "CLOSED" : "POST"}
             onPress={handleSubmit}
             loading={loading}
             disabled={
               !selectedRaceId ||
-              !firstPosition ||
-              !secondPosition ||
-              !thirdPosition
+              (!firstPosition && !secondPosition && !thirdPosition) ||
+              isClosed
             }
             style={{ marginTop: 0 }}
           />
@@ -217,7 +257,7 @@ export default function SubmitPredictionScreen() {
 
         {/* 予想一覧へ */}
         <TouchableOpacity
-          onPress={() => router.push("/(tabs)/predictions")}
+          onPress={() => router.push("/(tabs)")}
           className="mt-4 items-center"
           activeOpacity={0.8}
         >

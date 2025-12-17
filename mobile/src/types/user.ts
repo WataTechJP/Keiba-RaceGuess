@@ -32,7 +32,7 @@ export type UserDetail = {
   // 統計情報
   predictions_count?: number;
   hit_rate?: number;
+  points?: number;
   followers_count?: number;
   following_count?: number;
-  points?: number;
 }

@@ -116,7 +116,6 @@ export default function TabsLayout() {
                 onPress={onPress}
                 onLongPress={() => setShowFriendsMenu(true)}
                 style={{
-                  flex: 1,
                   justifyContent: "center",
                   alignItems: "center",
                 }}
@@ -168,7 +167,7 @@ export default function TabsLayout() {
         <Tabs.Screen
           name="results"
           options={{
-            title: "結果",
+            title: "結果・ランキング",
             tabBarIcon: ({ size, color }) => (
               <Ionicons name="trophy" size={size} color={color} />
             ),
@@ -190,7 +189,7 @@ export default function TabsLayout() {
         <Tabs.Screen
           name="profile"
           options={{
-            title: "プロフィール",
+            title: "アカウント",
             tabBarIcon: ({ size, color }) => (
               <Ionicons name="person" size={size} color={color} />
             ),
@@ -202,7 +201,7 @@ export default function TabsLayout() {
                   color: focused ? "#8D6E63" : "#fff",
                 }}
               >
-                プロフィール
+                アカウント
               </RNText>
             ),
           }}

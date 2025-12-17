@@ -227,6 +227,58 @@ class UserPointViewSet(viewsets.ReadOnlyModelViewSet):
         return UserPoint.objects.filter(user=self.request.user)
 
 
+
+
+def calculate_hit_rate(user):
+    """
+    的中率を計算する
+    
+    計算方法:
+    1. ユーザーの全予想を取得
+    2. レース結果がある予想のみ対象
+    3. 的中した馬の数を数える
+    4. パーセンテージを計算
+    """
+    # ユーザーの全予想を取得
+    predictions = Prediction.objects.filter(user=user)
+    
+    # 予想した馬の総数（1予想 = 3頭）
+    total_horses = predictions.count() * 3
+    
+    # 予想がない場合
+    if total_horses == 0:
+        return 0
+    
+    # 的中数をカウント
+    hit_count = 0
+    
+    for prediction in predictions:
+        # このレースの結果があるか確認
+        try:
+            result = RaceResult.objects.get(race=prediction.race)
+            
+            # 1着が的中しているか
+            if prediction.first_position == result.first_place:
+                hit_count += 1
+            
+            # 2着が的中しているか
+            if prediction.second_position == result.second_place:
+                hit_count += 1
+            
+            # 3着が的中しているか
+            if prediction.third_position == result.third_place:
+                hit_count += 1
+                
+        except RaceResult.DoesNotExist:
+            # レース結果がまだない場合はスキップ
+            continue
+    
+    # 的中率を計算（小数点第1位まで）
+    hit_rate = round((hit_count / total_horses) * 100, 1)
+    
+    return hit_rate
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def user_profile(request):
@@ -244,6 +296,9 @@ def user_profile(request):
     except UserPoint.DoesNotExist:
         points = 0
     
+    # ✅ 的中率の計算
+    hit_rate = calculate_hit_rate(user)
+    
     # プロフィール画像URLを取得
     profile_image_url = None
     DEFAULT_IMAGE = "profile_images/default-image.jpg"
@@ -252,6 +307,7 @@ def user_profile(request):
         profile_image_url = request.build_absolute_uri(user.userprofile.profile_image.url)
     else:
         # デフォルト画像
+        from django.conf import settings
         profile_image_url = request.build_absolute_uri(f"{settings.MEDIA_URL}{DEFAULT_IMAGE}")
     
     return Response({
@@ -264,6 +320,156 @@ def user_profile(request):
         },
         'predictions_count': predictions_count,
         'followers_count': followers_count,
-        'hit_rate': 0,  # TODO: 的中率の計算ロジックを追加
+        'hit_rate': hit_rate,
         'points': points,
     })
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def results_list(request):
+    """ユーザーの予想結果一覧を取得"""
+    user = request.user
+    
+    # ユーザーの予想を取得
+    predictions = Prediction.objects.filter(user=user)
+    
+    results = []
+    
+    for prediction in predictions:
+        # レース結果があるか確認
+        try:
+            race_result = RaceResult.objects.get(race=prediction.race)
+            
+            # ポイントを計算
+            score = 0
+            if prediction.first_position == race_result.first_place:
+                score += 3
+            if prediction.second_position == race_result.second_place:
+                score += 2
+            if prediction.third_position == race_result.third_place:
+                score += 1
+            
+            # レスポンスに追加
+            results.append({
+                'id': prediction.id,
+                'race_name': prediction.race.name,
+                # 'race_date': prediction.race.date.isoformat(),
+                'race_location': prediction.race.location,
+                'predicted_1': prediction.first_position.name,
+                'predicted_2': prediction.second_position.name,
+                'predicted_3': prediction.third_position.name,
+                'actual_1': race_result.first_place.name,
+                'actual_2': race_result.second_place.name,
+                'actual_3': race_result.third_place.name,
+                'score': score,
+            })
+            
+        except RaceResult.DoesNotExist:
+            # レース結果がまだない場合はスキップ
+            continue
+    
+    return Response(results)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def user_points(request):
+    """ユーザーの合計ポイントと的中率を取得"""
+    user = request.user
+    
+    # ポイントを取得
+    try:
+        user_point = UserPoint.objects.get(user=user)
+        points = user_point.points
+    except UserPoint.DoesNotExist:
+        points = 0
+    
+    # ✅ 的中率を計算
+    hit_rate = calculate_hit_rate(user)
+    
+    return Response({
+        'points': points,
+        'hit_rate': hit_rate
+    })
+
+# api/views.py
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def points_ranking(request):
+    """ポイントランキング（TOP 20）"""
+    from django.db.models import Count
+    
+    # UserPointが存在するユーザーを取得
+    rankings = []
+    user_points = UserPoint.objects.select_related('user').order_by('-points')[:20]
+    
+    for rank, user_point in enumerate(user_points, start=1):
+        user = user_point.user
+        predictions_count = Prediction.objects.filter(user=user).count()
+        hit_rate = calculate_hit_rate(user)
+        
+        # プロフィール画像URL
+        profile_image_url = None
+        if hasattr(user, 'userprofile') and user.userprofile.profile_image:
+            profile_image_url = request.build_absolute_uri(user.userprofile.profile_image.url)
+        
+        rankings.append({
+            'rank': rank,
+            'user_id': user.id,
+            'username': user.username,
+            'profile_image_url': profile_image_url,
+            'points': user_point.points,
+            'hit_rate': hit_rate,
+            'predictions_count': predictions_count,
+        })
+    
+    return Response(rankings)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def hit_rate_ranking(request):
+    """的中率ランキング（TOP 20）"""
+    from django.contrib.auth.models import User
+    
+    # 全ユーザーの的中率を計算
+    users_data = []
+    
+    for user in User.objects.all():
+        predictions_count = Prediction.objects.filter(user=user).count()
+        
+        # 予想が3件以上のユーザーのみ対象
+        if predictions_count >= 3:
+            hit_rate = calculate_hit_rate(user)
+            
+            try:
+                user_point = UserPoint.objects.get(user=user)
+                points = user_point.points
+            except UserPoint.DoesNotExist:
+                points = 0
+            
+            # プロフィール画像URL
+            profile_image_url = None
+            if hasattr(user, 'userprofile') and user.userprofile.profile_image:
+                profile_image_url = request.build_absolute_uri(user.userprofile.profile_image.url)
+            
+            users_data.append({
+                'user_id': user.id,
+                'username': user.username,
+                'profile_image_url': profile_image_url,
+                'points': points,
+                'hit_rate': hit_rate,
+                'predictions_count': predictions_count,
+            })
+    
+    # 的中率でソート
+    users_data.sort(key=lambda x: x['hit_rate'], reverse=True)
+    
+    # TOP 20 + ランク番号を追加
+    rankings = []
+    for rank, user_data in enumerate(users_data[:20], start=1):
+        user_data['rank'] = rank
+        rankings.append(user_data)
+    
+    return Response(rankings)

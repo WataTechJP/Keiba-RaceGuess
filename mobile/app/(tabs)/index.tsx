@@ -19,6 +19,7 @@ import type {
   Prediction,
   TimelinePrediction,
 } from "../../src/types/prediction";
+import { TabSwitch } from "../../src/components/common/TabSwitch";
 
 type TabType = "my" | "timeline";
 
@@ -133,37 +134,14 @@ export default function HomeScreen() {
 
   return (
     <View className="flex-1 bg-transparent px-4">
-      {/* タブ切り替え */}
-      <View className="flex-row bg-white mt-4 mb-1 rounded-2xl p-1 shadow-lg">
-        <TouchableOpacity
-          className={`flex-1 py-2 rounded-xl ${
-            activeTab === "my" ? "bg-keiba-500" : "bg-transparent"
-          }`}
-          onPress={() => setActiveTab("my")}
-        >
-          <Text
-            className={`text-base text-center font-bold ${
-              activeTab === "my" ? "text-white" : "text-text-secondary"
-            }`}
-          >
-            My予想
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          className={`flex-1 py-2 rounded-xl ${
-            activeTab === "timeline" ? "bg-keiba-500" : "bg-transparent"
-          }`}
-          onPress={() => setActiveTab("timeline")}
-        >
-          <Text
-            className={`text-base text-center font-bold ${
-              activeTab === "timeline" ? "text-white" : "text-text-secondary"
-            }`}
-          >
-            TimeLine
-          </Text>
-        </TouchableOpacity>
-      </View>
+      <TabSwitch
+        tabs={[
+          { key: "my", label: "My予想" },
+          { key: "timeline", label: "TimeLine" },
+        ]}
+        activeTab={activeTab}
+        onTabChange={(key) => setActiveTab(key as TabType)}
+      />
 
       {/* My予想タブ */}
       {activeTab === "my" && (

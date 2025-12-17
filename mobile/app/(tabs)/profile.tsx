@@ -138,9 +138,9 @@ export default function ProfileScreen() {
         </View>
         <View className="flex-1 items-center">
           <Text className="text-2xl font-bold text-gray-900 mb-1">
-            {profile?.hit_rate || 0}%
+            {profile?.hit_rate || 0}
           </Text>
-          <Text className="text-xs text-gray-500">的中率</Text>
+          <Text className="text-xs text-gray-500">的中率 (%)</Text>
         </View>
         <View className="flex-1 items-center">
           <Text className="text-2xl font-bold text-gray-900 mb-1">

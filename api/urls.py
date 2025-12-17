@@ -33,6 +33,10 @@ urlpatterns = [
     path("auth/login/", CustomAuthToken.as_view(), name="api-login"),
     path("auth/logout/", LogoutView.as_view(), name="api-logout"),
     path('users/me/profile/', views.user_profile, name='user-profile'),
+    path('results/', views.results_list, name='results-list'),
+    path('user-points/', views.user_points, name='user-points'),
+    path('rankings/points/', views.points_ranking, name='points-ranking'),
+    path('rankings/hit-rate/', views.hit_rate_ranking, name='hit-rate-ranking'),
     path("", include(router.urls)),
 ]
 
