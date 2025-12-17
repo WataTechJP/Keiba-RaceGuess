@@ -1,0 +1,192 @@
+<!-- prettier-ignore -->
+{% extends 'base.html' %}
+
+{% block title %}
+ホーム {{ user.username }}
+{% endblock %}
+
+{% block content %}
+
+<!-- メインヒーロー -->
+<div class="text-center mb-12 text-stone-950">
+  <div
+    class="bg-gradient-to-r from-blue-600 to-purple-700 rounded-2xl shadow-2xl p-12 mb-8"
+  >
+    <h1 class="text-3xl text-blue-500 font-bold">競馬予想ゲーム</h1>
+    <h1 class="text-5xl font-bold mb-4">🏇 Keiba-Battle</h1>
+    <p class="text-xl mb-6">友達と競い合う、新感覚の競馬予想ゲーム！</p>
+    <div class="flex justify-center items-center space-x-8 text-lg">
+      <div class="flex items-center">
+        <span class="text-2xl mr-2">📈</span>
+        <span>予想で競争</span>
+      </div>
+      <div class="flex items-center">
+        <span class="text-2xl mr-2">👥</span>
+        <span>仲間とバトル</span>
+      </div>
+      <div class="flex items-center">
+        <span class="text-2xl mr-2">🏆</span>
+        <span>ランキング</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- アクションボタン -->
+  {% if not user.is_authenticated %}
+  <div class="flex justify-center space-x-4 mb-12">
+    <a
+      href="{% url 'signup' %}"
+      class="bg-green-500 font-bold py-4 px-8 rounded-xl text-lg hover:bg-green-600"
+    >
+      🚀 今すぐ始める（無料） </a
+    ><br />
+    <a
+      href="{% url 'login' %}"
+      class="bg-white hover:bg-gray-50 text-gray-800 font-bold py-4 px-8 rounded-xl text-lg shadow-lg border-2 border-gray-300 transition"
+    >
+      ログイン
+    </a>
+  </div>
+  {% else %}
+  <div
+    class="bg-green-100 border border-green-400 text-green-700 px-6 py-4 rounded-xl mb-12"
+  >
+    <p class="text-lg">
+      <span class="font-semibold">{{ user.username }}</span>さん、お疲れ様です！
+    </p>
+    <a
+      href="{% url 'prediction_list' %}"
+      class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg mt-3 inline-block transition"
+    >
+      予想を始める →
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+<!-- ゲームの仕組み -->
+<div class="bg-white rounded-xl shadow-lg p-8 mb-8">
+  <h2 class="text-3xl font-bold text-center text-gray-800 mb-8">
+    🎮 ゲームの仕組み
+  </h2>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+    <!-- ステップ1 -->
+    <div class="text-center">
+      <div
+        class="bg-blue-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4"
+      >
+        <span class="text-3xl">1️⃣</span>
+      </div>
+      <h3 class="text-xl font-semibold mb-3 text-gray-800">
+        レースを選んで予想
+      </h3>
+      <p class="text-gray-600">
+        気になるレースの1着〜3着を予想しよう。データを見て分析するのも良し、直感で選ぶのも良し！
+      </p>
+    </div>
+
+    <!-- ステップ2 -->
+    <div class="text-center">
+      <div
+        class="bg-green-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4"
+      >
+        <span class="text-3xl">2️⃣</span>
+      </div>
+      <h3 class="text-xl font-semibold mb-3 text-gray-800">仲間と競争</h3>
+      <p class="text-gray-600">
+        友達や他のユーザーと予想を比較。グループを作って友達同士でも楽しめる！
+      </p>
+    </div>
+
+    <!-- ステップ3 -->
+    <div class="text-center">
+      <div
+        class="bg-yellow-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4"
+      >
+        <span class="text-3xl">3️⃣</span>
+      </div>
+      <h3 class="text-xl font-semibold mb-3 text-gray-800">
+        結果発表・ランキング
+      </h3>
+      <p class="text-gray-600">
+        レース後に結果を確認。的中率やポイントでランキングが決まる。君は競馬王になれるか？
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- 特徴 -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+  <!-- 無料で楽しめる -->
+  <div class="bg-gradient-to-br from-green-400 to-blue-500 rounded-xl p-6">
+    <div class="flex items-center mb-4">
+      <span class="text-3xl mr-4">💰</span>
+      <h3 class="text-2xl font-bold">完全無料</h3>
+    </div>
+    <p class="text-green-100">
+      お金を賭ける必要なし！<br />純粋に予想力を競い合って楽しもう。
+    </p>
+  </div>
+
+  <!-- ソーシャル -->
+  <div class="bg-gradient-to-br from-purple-400 to-pink-500 rounded-xl p-6">
+    <div class="flex items-center mb-4">
+      <span class="text-3xl mr-4">👫</span>
+      <h3 class="text-2xl font-bold">みんなで楽しい</h3>
+    </div>
+    <p class="text-purple-100">
+      フォロー機能やグループ機能で、<br />仲間と一緒に競馬を10倍楽しく！
+    </p>
+  </div>
+</div>
+
+<!-- サンプル画面 -->
+<div class="bg-gray-50 rounded-xl p-8 text-center">
+  <h2 class="text-2xl font-bold text-gray-800 mb-4">
+    📱 こんな感じで予想します
+  </h2>
+  <div class="bg-white rounded-lg shadow-md p-6 max-w-md mx-auto">
+    <div class="text-left">
+      <h4 class="font-semibold mb-2">🏁 第4R 新馬戦</h4>
+      <div class="space-y-2 text-sm">
+        <div class="flex justify-between">
+          <span>1着予想:</span>
+          <span class="font-semibold text-blue-600">3番 サクラチャンス</span>
+        </div>
+        <div class="flex justify-between">
+          <span>2着予想:</span>
+          <span class="font-semibold text-green-600">7番 ミラクルホース</span>
+        </div>
+        <div class="flex justify-between">
+          <span>3着予想:</span>
+          <span class="font-semibold text-yellow-600">1番 スピードスター</span>
+        </div>
+      </div>
+      <div class="mt-4 text-xs text-gray-500">
+        <p>💬 「3番の血統が良い！今回は堅く行きます」</p>
+      </div>
+    </div>
+  </div>
+  <p class="text-gray-600 mt-4">
+    シンプルで分かりやすい！初心者でもすぐに参加できます
+  </p>
+</div>
+
+<!-- 最終CTA -->
+{% if not user.is_authenticated %}
+<div
+  class="text-center mt-12 bg-gradient-to-r from-orange-400 to-red-500 rounded-xl p-8"
+>
+  <h2 class="text-3xl font-bold mb-4">🎯 さあ、予想バトルを始めよう！</h2>
+  <p class="text-xl text-orange-100 mb-6">
+    今すぐ無料登録して、競馬予想の新しい楽しみ方を体験しよう
+  </p>
+  <a
+    href="{% url 'signup' %}"
+    class="bg-white text-red-500 font-bold py-4 px-8 rounded-xl text-lg shadow-lg hover:bg-gray-100 transition transform hover:scale-105"
+  >
+    🚀 無料で始める
+  </a>
+</div>
+{% endif %} {% endblock %}

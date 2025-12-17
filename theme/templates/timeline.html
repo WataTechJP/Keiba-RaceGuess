@@ -1,0 +1,75 @@
+<!-- prettier-ignore -->
+{% extends "base.html" %}
+{% load static %}
+{% block title %}タイムライン{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold text-blue-600 mb-2">
+  <a href="{% url 'timeline' %}" class="transform transition-all duration-300 hover:-translate-y-2 hover:text-blue-700 inline-block">
+    TimeLine
+  </a>
+</h1>
+<h2 class="text-xl font-bold text-black mb-2">ここでは、あなたやフレンドの予想がタイムラインに表示されます。</h2>
+
+<a href="{% url 'submit_prediction' %}" class="inline-block bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mb-4">
+  ＋ 予想を作成
+</a> 
+
+<form method="get" class="mb-4">
+  <label for="race_id">レースで絞り込み:</label>
+  <select
+    name="race_id"
+    id="race_id"
+    class="border border-gray-300 rounded px-2 py-1"
+    onchange="this.form.submit()"
+  >
+    <option value="">すべてのレース</option>
+    {% for race in races %}
+    <option value="{{ race.id }}" {% if race.id == selected_race_id %}selected{% endif %}>
+      {{ race.name }}
+    </option>
+    {% endfor %}
+  </select>
+</form>
+
+{% if predictions %}
+<ul class="space-y-4">
+  {% for p in predictions %}
+  <li class="border p-4 rounded shadow-sm bg-white">
+  <div class="flex items-start space-x-6">
+    {% if p.user.userprofile.profile_image %}
+      <img
+        src="{{ p.user.userprofile.profile_image.url }}?v={{ p.user.userprofile.updated_at|date:'U' }}"
+        alt="{{ p.user.username }}のプロフィール画像"
+        class="w-12 h-12 object-cover rounded-full border border-gray-300 shadow"
+        style="width: 48px; height: 48px;"
+      />
+    {% else %}
+      <div>
+        <img
+          src="{% static 'images/user.png' %}"
+          alt="デフォルトプロフィール画像"
+          class="w-12 h-12 object-cover rounded-full border border-gray-300 shadow"
+          style="width: 48px; height: 48px;"
+        />
+      </div>
+    {% endif %}
+
+    <div class="flex-1 space-y-1">
+      <div class="text-sm text-gray-500">{{ p.user.username }} の予想</div>
+      <div class="font-bold text-lg text-blue-700">{{ p.race.name }}</div>
+      <div>🥇 {{ p.first_position.name }}</div>
+      <div>🥈 {{ p.second_position.name }}</div>
+      <div>🥉 {{ p.third_position.name }}</div>
+      <div class="text-sm text-gray-400">{{ p.created_at|date:"Y年m月d日 H:i" }}</div>
+    </div>
+  </div>
+</li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="text-gray-500">まだ予想が表示されていません。</p>
+{% endif %}
+
+<a href="{% url 'user_list' %}" class="text-sm text-gray-500 mt-6 block">← フレンド一覧へ</a>
+{% endblock %}

@@ -1,0 +1,148 @@
+<!-- prettier-ignore -->
+
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}データ分析{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold text-blue-600 mb-2">データ分析</h1>
+<h2 class="text-xl font-bold text-black mb-2">
+  競馬予想の全体的なパフォーマンスを分析し、統計情報を確認できます。
+</h2>
+
+{% if success %}
+<!-- 成功メッセージ -->
+<div
+  class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6"
+>
+  ✅ データ分析が正常に完了しました！
+</div>
+
+<!-- 統計カードグリッド -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+  <div class="bg-white border rounded shadow-sm p-6 text-center">
+    <div class="text-3xl font-bold text-blue-600 mb-2">
+      {{ stats.total_predictions }}
+    </div>
+    <div class="text-sm text-gray-500">🎯 TimeLine上の全予想数</div>
+  </div>
+
+  <div class="bg-white border rounded shadow-sm p-6 text-center">
+    <div class="text-3xl font-bold text-green-600 mb-2">
+      {{ stats.total_races }}
+    </div>
+    <div class="text-sm text-gray-500">🏇 予想可能レース数</div>
+  </div>
+
+  <div class="bg-white border rounded shadow-sm p-6 text-center">
+    <div class="text-3xl font-bold text-purple-600 mb-2">
+      {{ stats.total_horses }}
+    </div>
+    <div class="text-sm text-gray-500">🐎 出馬数</div>
+  </div>
+
+  <div class="bg-white border rounded shadow-sm p-6 text-center">
+    <div class="text-3xl font-bold text-orange-600 mb-2">
+      {{ stats.total_results }}
+    </div>
+    <div class="text-sm text-gray-500">🏁 結果発表済みレース数</div>
+  </div>
+
+  <div class="bg-white border rounded shadow-sm p-6 text-center">
+    <div class="text-3xl font-bold text-indigo-600 mb-2">
+      {{ stats.total_users }}
+    </div>
+    <div class="text-sm text-gray-500">👥 登録ユーザー数</div>
+  </div>
+
+  <div class="bg-white border rounded shadow-sm p-6 text-center">
+    <div class="text-3xl font-bold text-red-600 mb-2">
+      {{ stats.accuracy_rate }}%
+    </div>
+    <div class="text-sm text-gray-500">📊 的中率</div>
+  </div>
+</div>
+
+<!-- 分析グラフ -->
+<div class="bg-white border rounded shadow-sm p-6">
+  <h2 class="text-xl font-bold text-blue-700 mb-4">📈 詳細分析グラフ</h2>
+  <div class="text-center">
+    <img
+      src="data:image/png;base64,{{ chart }}"
+      alt="分析グラフ"
+      class="max-w-full h-auto mx-auto rounded border shadow-sm"
+    />
+  </div>
+</div>
+
+<!-- 詳細データセクション -->
+<div class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <!-- 的中率詳細 -->
+  <div class="bg-white border rounded shadow-sm p-6">
+    <h3 class="text-lg font-bold text-blue-700 mb-3">🎯 的中率詳細</h3>
+    <div class="space-y-2">
+      <div class="flex justify-between">
+        <span class="text-gray-600">評価済み予想数:</span>
+        <span class="font-bold">{{ stats.evaluated_predictions }}</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-gray-600">的中率:</span>
+        <span class="font-bold text-green-600">{{ stats.accuracy_rate }}%</span>
+      </div>
+      <div class="w-full bg-gray-200 rounded-full h-2">
+        <div
+          class="bg-green-500 h-2 rounded-full"
+          style="width: {{ stats.accuracy_rate }}%"
+        ></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- データ概要 -->
+  <div class="bg-white border rounded shadow-sm p-6">
+    <h3 class="text-lg font-bold text-blue-700 mb-3">📋 データ概要</h3>
+    <ul class="space-y-2 text-sm">
+      <li class="flex items-center space-x-2">
+        <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
+        <span class="text-gray-600">予想: {{ stats.total_predictions }}件</span>
+      </li>
+      <li class="flex items-center space-x-2">
+        <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+        <span class="text-gray-600">レース: {{ stats.total_races }}件</span>
+      </li>
+      <li class="flex items-center space-x-2">
+        <span class="w-2 h-2 bg-purple-500 rounded-full"></span>
+        <span class="text-gray-600">馬: {{ stats.total_horses }}頭</span>
+      </li>
+      <li class="flex items-center space-x-2">
+        <span class="w-2 h-2 bg-orange-500 rounded-full"></span>
+        <span class="text-gray-600">結果: {{ stats.total_results }}件</span>
+      </li>
+      <li class="flex items-center space-x-2">
+        <span class="w-2 h-2 bg-indigo-500 rounded-full"></span>
+        <span class="text-gray-600">ユーザー: {{ stats.total_users }}人</span>
+      </li>
+      <li class="flex items-center space-x-2">
+        <span class="w-2 h-2 bg-pink-500 rounded-full"></span>
+        <span class="text-gray-600">グループ: {{ stats.total_groups }}組</span>
+      </li>
+    </ul>
+  </div>
+</div>
+
+{% else %}
+<!-- エラー表示 -->
+<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+  <h2 class="text-lg font-bold mb-2">⚠️ エラーが発生しました</h2>
+  <p class="mb-2"><strong>詳細:</strong> {{ error }}</p>
+  <p class="text-sm">データベースの接続やデータの確認をお試しください。</p>
+</div>
+{% endif %}
+
+<!-- 戻るリンク -->
+<a href="/timeline/" class="text-sm text-gray-500 mt-6 block"
+  >← タイムラインへ</a
+>
+
+{% endblock %}

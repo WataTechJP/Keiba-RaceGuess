@@ -1,0 +1,58 @@
+<!-- prettier-ignore -->
+{% extends "base.html" %}
+{% block title %}答え合わせ結果一覧{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold text-blue-600 mb-2">結果一覧</h1>
+<h2 class="text-xl font-bold text-black mb-2">
+  ここでは、あなたの予想の結果と獲得ポイントを確認できます。
+</h2>
+
+<p class="text-lg font-bold mb-4 mt-10">
+  🏆 あなたの獲得ポイント:
+  <span class="text-rose-600">{{ user_point.points }}</span> pt
+</p>
+
+<table class="table-auto w-full border">
+  <thead>
+    <tr class="bg-gray-100">
+      <th class="px-4 py-2 border">レース名</th>
+      <th class="px-4 py-2 border">開催日</th>
+      <th class="px-4 py-2 border">あなたの予想</th>
+      <th class="px-4 py-2 border">結果</th>
+      <th class="px-4 py-2 border">獲得ポイント</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for result in evaluated_results %}
+    <tr>
+      <td class="border px-4 py-2">{{ result.race_name }}</td>
+      <td class="border px-4 py-2">{{ result.race.date }}</td>
+      <td class="border px-4 py-2">
+        1着: {{ result.predicted_1 }}<br />
+        2着: {{ result.predicted_2 }}<br />
+        3着: {{ result.predicted_3 }}
+      </td>
+      <td class="border px-4 py-2">
+        1着: {{ result.actual_1 }}<br />
+        2着: {{ result.actual_2 }}<br />
+        3着: {{ result.actual_3 }}
+      </td>
+      <td class="border px-4 py-2 text-center">{{ result.score }} pt</td>
+    </tr>
+    {% empty %}
+    <tr>
+      <td colspan="4" class="text-center py-4">
+        まだ結果が反映された予想はありません。
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<p>🏆 獲得ポイントについて</p>
+<p>
+  獲得ポイントは、あなたの予想がどれだけ正確だったかに基づいています。<br />
+  1着・3ポイント、2着・2ポイント、3着・1ポイントの予想が的中するごとにポイントが加算されます。<br />
+  また、予想が的中しなかった場合はポイントは加算されません。
+</p>
+{% endblock %}

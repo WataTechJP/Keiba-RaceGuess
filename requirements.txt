@@ -1,0 +1,20 @@
+# Django Core
+Django==5.2.4
+asgiref==3.9.1
+sqlparse==0.5.3
+
+# Django REST Framework
+djangorestframework==3.16.1
+djangorestframework_simplejwt==5.5.1
+
+# CORS
+django-cors-headers
+
+# Tailwind CSS
+django-tailwind==4.2.0
+
+# Development Tools
+django-extensions==4.1
+
+# Utilities
+typing_extensions==4.14.1

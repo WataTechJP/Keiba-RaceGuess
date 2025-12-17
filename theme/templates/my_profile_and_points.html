@@ -1,0 +1,90 @@
+<!-- prettier-ignore -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}プロフィールとポイント{% endblock %}
+
+{% block content %}
+<h2 class="text-2xl font-bold mb-4 text-blue-600">プロフィール</h2>
+<div
+  class="bg-white shadow-md rounded p-6 max-w-md mx-auto space-y-4 text-center"
+>
+  {% if user.userprofile.profile_image %}
+  <div
+    class="w-32 h-32 mx-auto overflow-hidden rounded-full border border-gray-300 shadow-md"
+  >
+    <img
+      src="{{ user.userprofile.profile_image.url }}?v={{ profile.updated_at|date:'U' }}"
+      alt="プロフィール画像"
+      class="w-full h-full object-cover rounded-full"
+    />
+  </div>
+  {% else %}
+  <div
+    class="w-32 h-32 mx-auto overflow-hidden rounded-full border border-gray-300 shadow-md"
+  >
+    <img
+      src="{% static 'images/user.png' %}"
+      alt="デフォルトプロフィール画像"
+      class="w-full h-full object-cover rounded-full"
+    />
+  </div>
+  {% endif %}
+
+  <p><strong>ユーザー名：</strong> {{ user.username }}</p>
+  <p><strong>メールアドレス：</strong> {{ user.email }}</p>
+  <p><strong>登録日：</strong> {{ user.date_joined|date:"Y年m月d日" }}</p>
+
+  <form method="POST" enctype="multipart/form-data" class="space-y-2">
+    {% csrf_token %} {{ form.as_p }}
+    <button
+      type="submit"
+      class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+    >
+      プロフィール画像を更新
+    </button>
+  </form>
+</div>
+
+<h1 class="text-2xl font-bold mb-4 mt-10">🏆 あなたの獲得ポイント</h1>
+
+<p class="text-lg mb-4">
+  現在のポイント: <strong>{{ user_point.points }}</strong> pt
+</p>
+
+<h2 class="text-xl font-semibold mt-6">📋 レースごとの答え合わせ結果</h2>
+<table class="table-auto w-full border">
+  <thead>
+    <tr class="bg-gray-100">
+      <th class="px-4 py-2 border">レース名</th>
+      <th class="px-4 py-2 border">あなたの予想</th>
+      <th class="px-4 py-2 border">結果</th>
+      <th class="px-4 py-2 border">獲得ポイント</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for result in evaluated_results %}
+    <tr>
+      <td class="border px-4 py-2">{{ result.race_name }}</td>
+      <td class="border px-4 py-2">
+        1着: {{ result.predicted_1 }}<br />
+        2着: {{ result.predicted_2 }}<br />
+        3着: {{ result.predicted_3 }}
+      </td>
+      <td class="border px-4 py-2">
+        1着: {{ result.actual_1 }}<br />
+        2着: {{ result.actual_2 }}<br />
+        3着: {{ result.actual_3 }}
+      </td>
+      <td class="border px-4 py-2 text-center">{{ result.score }} pt</td>
+    </tr>
+    {% empty %}
+    <tr>
+      <td colspan="4" class="text-center py-4">
+        まだ結果が反映された予想はありません。
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
