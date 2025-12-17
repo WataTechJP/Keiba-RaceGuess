@@ -9,6 +9,15 @@ from .forms import SignUpForm, GroupMessageForm, SelectMyPredictionForm, UserPro
 from .utils import evaluate_predictions
 from django.contrib.admin.views.decorators import staff_member_required
 
+from django.db.models import Q
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from .models import Race, Horse, Prediction
+import json
+
 def home(request):
     return render(request, 'home.html')
 
@@ -48,6 +57,435 @@ def get_horses_by_race(request):
         return JsonResponse(list(horses), safe=False)
     return JsonResponse([], safe=False)
 
+
+# prediction/views.py に追加するコード（修正版）
+
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
+from django.shortcuts import get_object_or_404
+from .models import Race, Horse, Prediction
+import json
+
+# ============================================
+# 予想機能API
+# ============================================
+
+@login_required
+def get_races_api(request):
+    """
+    レース一覧API
+    GET /api/races/
+    """
+    races = Race.objects.all().order_by('-date')
+    
+    data = [
+        {
+            'id': race.id,
+            'name': race.name,
+            'date': race.date.isoformat() if hasattr(race, 'date') and race.date else None,
+        }
+        for race in races
+    ]
+    
+    return JsonResponse(data, safe=False)
+
+
+@login_required
+def get_horses_api(request):
+    """
+    馬一覧API（レースIDで絞り込み）
+    GET /api/horses/?race_id=1
+    """
+    race_id = request.GET.get('race_id')
+    
+    if not race_id:
+        return JsonResponse([], safe=False)
+    
+    horses = Horse.objects.filter(race_id=race_id).order_by('number')
+    
+    data = [
+        {
+            'id': horse.id,
+            'name': horse.name,
+            'number': horse.number if hasattr(horse, 'number') else None,
+        }
+        for horse in horses
+    ]
+    
+    return JsonResponse(data, safe=False)
+
+
+# @csrf_exempt  # モバイルアプリ用にCSRF無効化
+# @login_required
+# def predictions_api(request):
+#     """
+#     予想API（GET/POST両対応）
+#     GET: 予想一覧取得
+#     POST: 予想投稿
+#     """
+#     if request.method == 'GET':
+#         # 予想一覧取得
+#         predictions = Prediction.objects.filter(
+#             user=request.user
+#         ).select_related(
+#             'race', 'first_position', 'second_position', 'third_position'
+#         ).order_by('-created_at')
+        
+#         data = [
+#             {
+#                 'id': pred.id,
+#                 'race': {
+#                     'id': pred.race.id,
+#                     'name': pred.race.name,
+#                 },
+#                 'first_position': {
+#                     'id': pred.first_position.id,
+#                     'name': pred.first_position.name,
+#                 },
+#                 'second_position': {
+#                     'id': pred.second_position.id,
+#                     'name': pred.second_position.name,
+#                 },
+#                 'third_position': {
+#                     'id': pred.third_position.id,
+#                     'name': pred.third_position.name,
+#                 },
+#                 'created_at': pred.created_at.isoformat(),
+#             }
+#             for pred in predictions
+#         ]
+        
+#         return JsonResponse(data, safe=False)
+    
+#     elif request.method == 'POST':
+#         # 予想投稿
+#         try:
+#             data = json.loads(request.body)
+            
+#             # バリデーション
+#             race_id = data.get('race')
+#             first_position_id = data.get('first_position')
+#             second_position_id = data.get('second_position')
+#             third_position_id = data.get('third_position')
+            
+#             if not all([race_id, first_position_id, second_position_id, third_position_id]):
+#                 return JsonResponse(
+#                     {'error': 'すべてのフィールドを入力してください'},
+#                     status=400
+#                 )
+            
+#             # レースと馬の存在確認
+#             race = get_object_or_404(Race, id=race_id)
+#             first_position = get_object_or_404(Horse, id=first_position_id)
+#             second_position = get_object_or_404(Horse, id=second_position_id)
+#             third_position = get_object_or_404(Horse, id=third_position_id)
+            
+#             # 重複チェック
+#             if len({first_position_id, second_position_id, third_position_id}) != 3:
+#                 return JsonResponse(
+#                     {'error': '同じ馬を複数回選択できません'},
+#                     status=400
+#                 )
+            
+#             # 予想作成
+#             prediction = Prediction.objects.create(
+#                 user=request.user,
+#                 race=race,
+#                 first_position=first_position,
+#                 second_position=second_position,
+#                 third_position=third_position,
+#             )
+            
+#             return JsonResponse({
+#                 'id': prediction.id,
+#                 'message': '予想を投稿しました',
+#                 'status': 'success'
+#             }, status=201)
+            
+#         except json.JSONDecodeError:
+#             return JsonResponse({'error': '無効なJSONデータです'}, status=400)
+#         except Exception as e:
+#             return JsonResponse({'error': str(e)}, status=500)
+    
+#     else:
+#         return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+
+# @csrf_exempt  # モバイルアプリ用にCSRF無効化
+# @login_required
+# def prediction_detail_api(request, prediction_id):
+#     """
+#     予想詳細API
+#     DELETE: 予想削除
+#     """
+#     if request.method == 'DELETE':
+#         try:
+#             prediction = get_object_or_404(Prediction, id=prediction_id)
+            
+#             # 自分の予想のみ削除可能
+#             if prediction.user != request.user:
+#                 return JsonResponse(
+#                     {'error': '自分の予想のみ削除できます'},
+#                     status=403
+#                 )
+            
+#             prediction.delete()
+            
+#             return JsonResponse({
+#                 'message': '予想を削除しました',
+#                 'status': 'success'
+#             })
+            
+#         except Exception as e:
+#             return JsonResponse({'error': str(e)}, status=500)
+#     else:
+#         return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+
+# prediction/views.py の最後に追加
+
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.authtoken.models import Token
+from rest_framework.response import Response
+from rest_framework import status
+from django.contrib.auth import authenticate
+from django.contrib.auth.models import User
+
+# ============================================
+# 認証API
+# ============================================
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def login_api(request):
+    """ログインAPI"""
+    username = request.data.get('username')
+    password = request.data.get('password')
+    
+    if not username or not password:
+        return Response(
+            {'error': 'ユーザー名とパスワードを入力してください'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    user = authenticate(username=username, password=password)
+    
+    if user is None:
+        return Response(
+            {'error': 'ユーザー名またはパスワードが正しくありません'},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+    
+    token, created = Token.objects.get_or_create(user=user)
+    
+    return Response({
+        'token': token.key,
+        'user': {
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+        }
+    })
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def register_api(request):
+    """登録API"""
+    username = request.data.get('username')
+    email = request.data.get('email')
+    password = request.data.get('password')
+    
+    if not username or not password:
+        return Response(
+            {'error': 'ユーザー名とパスワードを入力してください'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    if User.objects.filter(username=username).exists():
+        return Response(
+            {'error': 'このユーザー名は既に使用されています'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    user = User.objects.create_user(
+        username=username,
+        email=email,
+        password=password
+    )
+    
+    token = Token.objects.create(user=user)
+    
+    return Response({
+        'token': token.key,
+        'user': {
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+        }
+    }, status=status.HTTP_201_CREATED)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def logout_api(request):
+    """ログアウトAPI"""
+    request.user.auth_token.delete()
+    return Response({'message': 'ログアウトしました'})
+
+
+# ============================================
+# 予想機能API（トークン認証必須）
+# ============================================
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def predictions_api(request):
+    """予想API"""
+    if request.method == 'GET':
+        predictions = Prediction.objects.filter(
+            user=request.user
+        ).select_related(
+            'race', 'first_position', 'second_position', 'third_position'
+        ).order_by('-created_at')
+        
+        data = [
+            {
+                'id': pred.id,
+                'race': {
+                    'id': pred.race.id,
+                    'name': pred.race.name,
+                },
+                'first_position': {
+                    'id': pred.first_position.id,
+                    'name': pred.first_position.name,
+                },
+                'second_position': {
+                    'id': pred.second_position.id,
+                    'name': pred.second_position.name,
+                },
+                'third_position': {
+                    'id': pred.third_position.id,
+                    'name': pred.third_position.name,
+                },
+                'created_at': pred.created_at.isoformat(),
+            }
+            for pred in predictions
+        ]
+        
+        return Response(data)
+    
+    elif request.method == 'POST':
+        race_id = request.data.get('race')
+        first_position_id = request.data.get('first_position')
+        second_position_id = request.data.get('second_position')
+        third_position_id = request.data.get('third_position')
+        
+        if not all([race_id, first_position_id, second_position_id, third_position_id]):
+            return Response(
+                {'error': 'すべてのフィールドを入力してください'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            race = Race.objects.get(id=race_id)
+            first_position = Horse.objects.get(id=first_position_id)
+            second_position = Horse.objects.get(id=second_position_id)
+            third_position = Horse.objects.get(id=third_position_id)
+            
+            if len({first_position_id, second_position_id, third_position_id}) != 3:
+                return Response(
+                    {'error': '同じ馬を複数回選択できません'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            prediction = Prediction.objects.create(
+                user=request.user,
+                race=race,
+                first_position=first_position,
+                second_position=second_position,
+                third_position=third_position,
+            )
+            
+            return Response({
+                'id': prediction.id,
+                'message': '予想を投稿しました',
+            }, status=status.HTTP_201_CREATED)
+            
+        except Race.DoesNotExist:
+            return Response({'error': 'レースが見つかりません'}, status=status.HTTP_404_NOT_FOUND)
+        except Horse.DoesNotExist:
+            return Response({'error': '馬が見つかりません'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def prediction_detail_api(request, prediction_id):
+    """予想削除API"""
+    try:
+        prediction = Prediction.objects.get(id=prediction_id)
+        
+        if prediction.user != request.user:
+            return Response(
+                {'error': '自分の予想のみ削除できます'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        prediction.delete()
+        return Response({'message': '予想を削除しました'})
+        
+    except Prediction.DoesNotExist:
+        return Response(
+            {'error': '予想が見つかりません'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_races_api(request):
+    """レース一覧API"""
+    races = Race.objects.all().order_by('id')  # ← id でソート
+    
+    data = [
+        {
+            'id': race.id,
+            'name': race.name,
+        }
+        for race in races
+    ]
+    
+    return Response(data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_horses_api(request):
+    """馬一覧API"""
+    race_id = request.GET.get('race_id')
+    
+    if not race_id:
+        return Response([])
+    
+    horses = Horse.objects.filter(race_id=race_id).order_by('number')
+    
+    data = [
+        {
+            'id': horse.id,
+            'name': horse.name,
+            'number': horse.number if hasattr(horse, 'number') else None,
+        }
+        for horse in horses
+    ]
+    
+    return Response(data)
+
+
+
+
+
 @login_required
 def user_list(request):
     users = User.objects.exclude(id=request.user.id)
@@ -68,6 +506,129 @@ def follow_user(request, user_id):
 def unfollow_user(request, user_id):
     Follow.objects.filter(follower=request.user, followed__id=user_id).delete()
     return redirect("user_list")
+
+
+
+
+
+# ============================================
+# フレンド機能（API）for React Native
+# ============================================
+
+@api_view(['GET'])
+@login_required
+def search_users(request):
+    """
+    ユーザー検索API
+    GET /api/friends/search/?search=query
+    """
+    search_query = request.GET.get('search', '').strip()
+    
+    if not search_query:
+        return JsonResponse({
+            'users': [],
+            'followed_users': []
+        })
+    
+    # メールアドレスまたはユーザー名で検索（部分一致）
+    users = User.objects.filter(
+        Q(email__icontains=search_query) | 
+        Q(username__icontains=search_query)
+    ).exclude(id=request.user.id)[:20]  # 最大20件
+    
+    # フォロー中のユーザーIDリスト
+    followed_user_ids = list(
+        request.user.following.values_list('followed_id', flat=True)
+    )
+    
+    # ユーザー情報を整形
+    users_data = []
+    for user in users:
+        # UserProfileからbioを取得（存在する場合）
+        bio = ""
+        if hasattr(user, 'userprofile'):
+            bio = user.userprofile.bio or ""
+        
+        users_data.append({
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'bio': bio,
+        })
+    
+    return JsonResponse({
+        'users': users_data,
+        'followed_users': followed_user_ids
+    })
+
+
+@api_view(['POST'])
+@login_required
+def follow_user_api(request, user_id):
+    """
+    フォローAPI
+    POST /api/friends/{user_id}/follow/
+    """
+    try:
+        target_user = get_object_or_404(User, id=user_id)
+        
+        # 自分自身はフォローできない
+        if target_user == request.user:
+            return JsonResponse({'error': '自分自身をフォローできません'}, status=400)
+        
+        # フォロー作成（既に存在する場合は何もしない）
+        follow, created = Follow.objects.get_or_create(
+            follower=request.user,
+            followed=target_user
+        )
+        
+        return JsonResponse({
+            'status': 'followed',
+            'created': created,
+            'user_id': user_id
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@api_view(['POST'])
+@login_required
+def unfollow_user_api(request, user_id):
+    """
+    フォロー解除API
+    POST /api/friends/{user_id}/unfollow/
+    """
+    try:
+        deleted_count, _ = Follow.objects.filter(
+            follower=request.user,
+            followed_id=user_id
+        ).delete()
+        
+        return JsonResponse({
+            'status': 'unfollowed',
+            'deleted': deleted_count > 0,
+            'user_id': user_id
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@api_view(['GET'])
+@login_required
+def get_following_users(request):
+    """
+    フォロー中のユーザーIDリストを取得
+    GET /api/friends/following/
+    """
+    followed_user_ids = list(
+        request.user.following.values_list('followed_id', flat=True)
+    )
+    
+    return JsonResponse({
+        'followed_users': followed_user_ids
+    })
 
 @login_required
 def timeline(request):
@@ -326,6 +887,8 @@ def result_list_view(request):
         'evaluated_results': evaluated_results,
         'user_point': user_point,  # ← これが無いとテンプレートで `user_point.points` が使えない
     })
+
+
 
 
 import io
