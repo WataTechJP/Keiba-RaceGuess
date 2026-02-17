@@ -160,6 +160,12 @@ python manage.py migrate
 
 # スーパーユーザーを作成（管理画面用）
 python manage.py createsuperuser
+
+
+# 反映されたかを確認するには
+python manage.py showmigrations
+python manage.py sqlmigrate yourapp 000X
+
 ```
 
 ### 3. フロントエンド（モバイルアプリ）のセットアップ

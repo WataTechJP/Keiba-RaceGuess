@@ -18,6 +18,7 @@ import type {
 import { TabSwitch } from "../../src/components/common/TabSwitch";
 import { InfoModal } from "../../src/components/common/InfoModal";
 import { RankingList } from "../../src/components/results/RankingList";
+import { useLocalSearchParams } from "expo-router";
 
 export default function ResultsScreen() {
   const [results, setResults] = useState<RaceResult[]>([]);
@@ -33,7 +34,11 @@ export default function ResultsScreen() {
   const [infoModalVisible, setInfoModalVisible] = useState(false);
 
   // タブ切り替え
-  const [activeTab, setActiveTab] = useState<TabType>("my");
+  const { tab } = useLocalSearchParams<{ tab?: TabType }>();
+
+  const [activeTab, setActiveTab] = useState<TabType>(
+    tab === "points" || tab === "hit_rate" || tab === "my" ? tab : "my"
+  );
 
   useEffect(() => {
     loadResults();
@@ -45,6 +50,12 @@ export default function ResultsScreen() {
       loadRankings();
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    if (tab === "points" || tab === "hit_rate" || tab === "my") {
+      setActiveTab(tab);
+    }
+  }, [tab]);
 
   const loadResults = async () => {
     try {

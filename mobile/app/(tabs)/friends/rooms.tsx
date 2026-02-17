@@ -9,14 +9,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import api from "../../../src/api/client";
-
-interface Room {
-  id: number;
-  name: string;
-  description?: string;
-  member_count: number;
-  created_at: string;
-}
+import type { Room } from "@/types/friends";
 
 export default function RoomsScreen() {
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -30,7 +23,7 @@ export default function RoomsScreen() {
   const fetchRooms = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/api/rooms/");
+      const response = await api.get("/api/groups/");
       setRooms(response.data || []);
     } catch (error) {
       console.error("Error fetching rooms:", error);
@@ -43,7 +36,7 @@ export default function RoomsScreen() {
 
   const handleJoinRoom = async (roomId: number) => {
     try {
-      await api.post(`/api/rooms/${roomId}/join/`);
+      await api.post(`/api/groups/${roomId}/join/`);
       fetchRooms();
     } catch (error) {
       console.error("Error joining room:", error);
@@ -106,13 +99,6 @@ export default function RoomsScreen() {
                   </Text>
                 </View>
               </View>
-
-              {/* 説明 */}
-              {item.description && (
-                <Text className="text-sm text-text-secondary mb-3">
-                  {item.description}
-                </Text>
-              )}
 
               {/* 参加ボタン */}
               <TouchableOpacity

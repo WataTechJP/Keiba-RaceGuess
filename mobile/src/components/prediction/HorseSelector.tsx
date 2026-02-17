@@ -8,19 +8,15 @@ import {
   FlatList,
   Pressable,
 } from "react-native";
+import type { Horse } from "@/types/prediction";
 
-interface Horse {
-  id: number;
-  name: string;
-}
-
-interface HorseSelectorProps {
+type HorseSelectorProps = {
   label: string;
   horses: Horse[];
   selectedHorseId: number | null;
   onHorseChange: (horseId: number | null) => void;
   disabledHorseIds: number[];
-}
+};
 
 export function HorseSelector({
   label,
@@ -34,6 +30,17 @@ export function HorseSelector({
   const selectedHorse = horses.find((h) => h.id === selectedHorseId);
 
   const handleSelect = (horseId: number) => {
+    // ✅ 選択中の馬をもう一度押したら解除（null）
+    const nextHorseId = selectedHorseId === horseId ? null : horseId;
+
+    // 解除の場合はそのままOK
+    if (nextHorseId === null) {
+      onHorseChange(null);
+      setModalVisible(false);
+      return;
+    }
+
+    // ✅ それ以外は、disabled じゃなければ選択
     if (!disabledHorseIds.includes(horseId)) {
       onHorseChange(horseId);
       setModalVisible(false);
@@ -41,7 +48,7 @@ export function HorseSelector({
   };
 
   return (
-    <View className="mb-4">
+    <View>
       <Text className="text-sm font-semibold text-gray-700 mb-2">{label}</Text>
 
       {/* 選択ボタン */}

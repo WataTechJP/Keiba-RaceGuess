@@ -38,7 +38,7 @@ export function RaceSelector({
   };
 
   return (
-    <View className="mb-4">
+    <View>
       {/* 選択ボタン */}
       <TouchableOpacity
         className="flex-row justify-between items-center bg-white border border-gray-300 rounded-lg px-4 py-4 min-h-[50px]"

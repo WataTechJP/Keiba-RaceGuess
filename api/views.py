@@ -26,6 +26,7 @@ from .serializers import (
     GroupPredictionSerializer,
     PredictionGroupSerializer,
     PredictionSerializer,
+    PredictionCreateSerializer,
     TimelinePredictionSerializer,
     RaceResultSerializer,
     RaceSerializer,
@@ -34,6 +35,10 @@ from .serializers import (
     UserRegistrationSerializer,
 )
 
+class SignUpView(generics.CreateAPIView):
+    queryset = User.objects.all()
+    permission_classes = [permissions.AllowAny]
+    serializer_class = UserRegistrationSerializer
 
 class CustomAuthToken(ObtainAuthToken):
     """Returns auth token + basic user info."""
@@ -52,20 +57,12 @@ class CustomAuthToken(ObtainAuthToken):
             }
         )
 
-
 class LogoutView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
         Token.objects.filter(user=request.user).delete()
         return Response({"detail": "Logged out"})
-
-
-class SignUpView(generics.CreateAPIView):
-    queryset = User.objects.all()
-    permission_classes = [permissions.AllowAny]
-    serializer_class = UserRegistrationSerializer
-
 
 class RaceViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Race.objects.prefetch_related(
@@ -79,23 +76,24 @@ class RaceViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class PredictionViewSet(viewsets.ModelViewSet):
-    serializer_class = PredictionSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def get_queryset(self):
-        return (
-            Prediction.objects.filter(user=self.request.user)
-            .select_related(
-                "race",
-                "first_position",
-                "second_position",
-                "third_position",
-            )
-            .order_by("-created_at")
-        )
+    def get_serializer_class(self):
+        if self.action in ["create", "update", "partial_update"]:
+            return PredictionCreateSerializer
+        return PredictionSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        obj = serializer.instance
+        headers = self.get_success_headers(serializer.data)
+        return Response({"id": obj.id, "comment": obj.comment}, status=201, headers=headers)
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        comment = serializer.validated_data.get('comment', '')
+        serializer.save(user=self.request.user, comment=comment or '')
 
     @action(
         detail=False,
@@ -158,11 +156,30 @@ class PredictionGroupViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return self.request.user.prediction_groups.all().prefetch_related("members")
+        # Show all groups, not just user's groups
+        return PredictionGroup.objects.all().prefetch_related("members")
 
     def perform_create(self, serializer):
-        group = serializer.save()
+        group = serializer.save(owner=self.request.user)
         group.members.add(self.request.user)
+
+    @action(detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated])
+    def join(self, request, pk=None):
+        """グループに参加"""
+        group = self.get_object()
+        if request.user in group.members.all():
+            return Response({"detail": "すでにメンバーです。"}, status=400)
+        group.members.add(request.user)
+        return Response({"detail": "グループに参加しました。"}, status=200)
+
+    @action(detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated])
+    def leave(self, request, pk=None):
+        """グループから退出"""
+        group = self.get_object()
+        if request.user not in group.members.all():
+            return Response({"detail": "メンバーではありません。"}, status=400)
+        group.members.remove(request.user)
+        return Response({"detail": "グループから退出しました。"}, status=200)
 
     @action(detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated])
     def messages(self, request, pk=None):
@@ -318,6 +335,7 @@ def user_profile(request):
             'profile_image_url': profile_image_url,
             'updated_at': user.userprofile.updated_at if hasattr(user, 'userprofile') else None,
         },
+        'date_joined': user.date_joined,
         'predictions_count': predictions_count,
         'followers_count': followers_count,
         'hit_rate': hit_rate,
@@ -354,7 +372,7 @@ def results_list(request):
             results.append({
                 'id': prediction.id,
                 'race_name': prediction.race.name,
-                # 'race_date': prediction.race.date.isoformat(),
+                'race_date': prediction.race.date.isoformat(),
                 'race_location': prediction.race.location,
                 'predicted_1': prediction.first_position.name,
                 'predicted_2': prediction.second_position.name,

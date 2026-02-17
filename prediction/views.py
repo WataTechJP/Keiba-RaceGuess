@@ -15,8 +15,7 @@ from rest_framework.response import Response
 
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from .models import Race, Horse, Prediction
-import json
+from .serializers import PredictionSerializer
 
 def home(request):
     return render(request, 'home.html')
@@ -70,51 +69,6 @@ import json
 # ============================================
 # 予想機能API
 # ============================================
-
-@login_required
-def get_races_api(request):
-    """
-    レース一覧API
-    GET /api/races/
-    """
-    races = Race.objects.all().order_by('-date')
-    
-    data = [
-        {
-            'id': race.id,
-            'name': race.name,
-            'date': race.date.isoformat() if hasattr(race, 'date') and race.date else None,
-        }
-        for race in races
-    ]
-    
-    return JsonResponse(data, safe=False)
-
-
-@login_required
-def get_horses_api(request):
-    """
-    馬一覧API（レースIDで絞り込み）
-    GET /api/horses/?race_id=1
-    """
-    race_id = request.GET.get('race_id')
-    
-    if not race_id:
-        return JsonResponse([], safe=False)
-    
-    horses = Horse.objects.filter(race_id=race_id).order_by('number')
-    
-    data = [
-        {
-            'id': horse.id,
-            'name': horse.name,
-            'number': horse.number if hasattr(horse, 'number') else None,
-        }
-        for horse in horses
-    ]
-    
-    return JsonResponse(data, safe=False)
-
 
 # @csrf_exempt  # モバイルアプリ用にCSRF無効化
 # @login_required
@@ -351,67 +305,48 @@ def predictions_api(request):
             'race', 'first_position', 'second_position', 'third_position'
         ).order_by('-created_at')
         
-        data = [
-            {
-                'id': pred.id,
-                'race': {
-                    'id': pred.race.id,
-                    'name': pred.race.name,
-                },
-                'first_position': {
-                    'id': pred.first_position.id,
-                    'name': pred.first_position.name,
-                },
-                'second_position': {
-                    'id': pred.second_position.id,
-                    'name': pred.second_position.name,
-                },
-                'third_position': {
-                    'id': pred.third_position.id,
-                    'name': pred.third_position.name,
-                },
-                'created_at': pred.created_at.isoformat(),
-            }
-            for pred in predictions
-        ]
-        
-        return Response(data)
+        # ⭐ PredictionSerializerを使用
+        serializer = PredictionSerializer(predictions, many=True, context={'request': request})
+        return Response(serializer.data)
     
     elif request.method == 'POST':
         race_id = request.data.get('race')
         first_position_id = request.data.get('first_position')
         second_position_id = request.data.get('second_position')
         third_position_id = request.data.get('third_position')
-        
+        comment = request.data.get('comment', '')  # ✅ Get comment from request
+
         if not all([race_id, first_position_id, second_position_id, third_position_id]):
             return Response(
                 {'error': 'すべてのフィールドを入力してください'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         try:
             race = Race.objects.get(id=race_id)
             first_position = Horse.objects.get(id=first_position_id)
             second_position = Horse.objects.get(id=second_position_id)
             third_position = Horse.objects.get(id=third_position_id)
-            
+
             if len({first_position_id, second_position_id, third_position_id}) != 3:
                 return Response(
                     {'error': '同じ馬を複数回選択できません'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            
+
             prediction = Prediction.objects.create(
                 user=request.user,
                 race=race,
                 first_position=first_position,
                 second_position=second_position,
                 third_position=third_position,
+                comment=comment or '',
             )
-            
+
             return Response({
                 'id': prediction.id,
                 'message': '予想を投稿しました',
+                'comment': prediction.comment,
             }, status=status.HTTP_201_CREATED)
             
         except Race.DoesNotExist:
@@ -447,16 +382,18 @@ def prediction_detail_api(request, prediction_id):
 @permission_classes([IsAuthenticated])
 def get_races_api(request):
     """レース一覧API"""
-    races = Race.objects.all().order_by('id')  # ← id でソート
-    
+    races = Race.objects.all().order_by('id')
+
     data = [
         {
             'id': race.id,
             'name': race.name,
+            'date': race.date.isoformat() if race.date else None,
+            'location': race.location,
         }
         for race in races
     ]
-    
+
     return Response(data)
 
 
@@ -516,54 +453,64 @@ def unfollow_user(request, user_id):
 # ============================================
 
 @api_view(['GET'])
-@login_required
+@permission_classes([IsAuthenticated])
 def search_users(request):
     """
     ユーザー検索API
     GET /api/friends/search/?search=query
     """
     search_query = request.GET.get('search', '').strip()
-    
+
     if not search_query:
-        return JsonResponse({
+        return Response({
             'users': [],
             'followed_users': []
         })
-    
+
     # メールアドレスまたはユーザー名で検索（部分一致）
     users = User.objects.filter(
-        Q(email__icontains=search_query) | 
+        Q(email__icontains=search_query) |
         Q(username__icontains=search_query)
     ).exclude(id=request.user.id)[:20]  # 最大20件
-    
+
     # フォロー中のユーザーIDリスト
     followed_user_ids = list(
         request.user.following.values_list('followed_id', flat=True)
     )
-    
+
     # ユーザー情報を整形
     users_data = []
+    DEFAULT_IMAGE = "profile_images/default-image.jpg"
+
     for user in users:
-        # UserProfileからbioを取得（存在する場合）
-        bio = ""
-        if hasattr(user, 'userprofile'):
-            bio = user.userprofile.bio or ""
-        
+        profile_image_url = None
+
+        if hasattr(user, 'userprofile') and user.userprofile.profile_image:
+            profile_image_url = request.build_absolute_uri(user.userprofile.profile_image.url)
+
+        if not profile_image_url:
+            from django.conf import settings
+            profile_image_url = request.build_absolute_uri(f"{settings.MEDIA_URL}{DEFAULT_IMAGE}")
+
+        # 予想数を取得
+        predictions_count = Prediction.objects.filter(user=user).count()
+
         users_data.append({
             'id': user.id,
             'username': user.username,
             'email': user.email,
-            'bio': bio,
+            'profile_image_url': profile_image_url,
+            'predictions_count': predictions_count,
         })
-    
-    return JsonResponse({
+
+    return Response({
         'users': users_data,
         'followed_users': followed_user_ids
     })
 
 
 @api_view(['POST'])
-@login_required
+@permission_classes([IsAuthenticated])
 def follow_user_api(request, user_id):
     """
     フォローAPI
@@ -571,29 +518,29 @@ def follow_user_api(request, user_id):
     """
     try:
         target_user = get_object_or_404(User, id=user_id)
-        
+
         # 自分自身はフォローできない
         if target_user == request.user:
-            return JsonResponse({'error': '自分自身をフォローできません'}, status=400)
-        
+            return Response({'error': '自分自身をフォローできません'}, status=status.HTTP_400_BAD_REQUEST)
+
         # フォロー作成（既に存在する場合は何もしない）
         follow, created = Follow.objects.get_or_create(
             follower=request.user,
             followed=target_user
         )
-        
-        return JsonResponse({
+
+        return Response({
             'status': 'followed',
             'created': created,
             'user_id': user_id
         })
-        
+
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['POST'])
-@login_required
+@permission_classes([IsAuthenticated])
 def unfollow_user_api(request, user_id):
     """
     フォロー解除API
@@ -604,30 +551,55 @@ def unfollow_user_api(request, user_id):
             follower=request.user,
             followed_id=user_id
         ).delete()
-        
-        return JsonResponse({
+
+        return Response({
             'status': 'unfollowed',
             'deleted': deleted_count > 0,
             'user_id': user_id
         })
-        
+
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['GET'])
-@login_required
+@permission_classes([IsAuthenticated])
 def get_following_users(request):
     """
-    フォロー中のユーザーIDリストを取得
+    フォロー中のユーザー詳細リストを取得
     GET /api/friends/following/
     """
-    followed_user_ids = list(
-        request.user.following.values_list('followed_id', flat=True)
-    )
-    
-    return JsonResponse({
-        'followed_users': followed_user_ids
+    # フォロー中のユーザーを取得
+    following = Follow.objects.filter(follower=request.user).select_related('followed')
+
+    users_data = []
+    DEFAULT_IMAGE = "profile_images/default-image.jpg"
+
+    for follow in following:
+        user = follow.followed
+        profile_image_url = None
+
+        if hasattr(user, 'userprofile') and user.userprofile.profile_image:
+            profile_image_url = request.build_absolute_uri(user.userprofile.profile_image.url)
+
+        if not profile_image_url:
+            from django.conf import settings
+            profile_image_url = request.build_absolute_uri(f"{settings.MEDIA_URL}{DEFAULT_IMAGE}")
+
+        # 予想数を取得
+        predictions_count = Prediction.objects.filter(user=user).count()
+
+        users_data.append({
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'profile_image_url': profile_image_url,
+            'predictions_count': predictions_count,
+        })
+
+    return Response({
+        'following': users_data,
+        'count': len(users_data)
     })
 
 @login_required

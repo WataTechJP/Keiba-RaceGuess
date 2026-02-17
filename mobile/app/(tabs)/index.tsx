@@ -6,7 +6,6 @@ import {
   RefreshControl,
   Alert,
   ActivityIndicator,
-  TouchableOpacity,
   FlatList,
   Image,
 } from "react-native";
@@ -14,11 +13,7 @@ import { useRouter } from "expo-router";
 import client from "../../src/api/client";
 import { RaceSelector } from "../../src/components/prediction/RaceSelector";
 import PredictionCard from "../../src/components/prediction/PredictionCard";
-import type {
-  Race,
-  Prediction,
-  TimelinePrediction,
-} from "../../src/types/prediction";
+import type { Race, Prediction, TimelinePrediction } from "@/types/prediction";
 import { TabSwitch } from "../../src/components/common/TabSwitch";
 
 type TabType = "my" | "timeline";
@@ -41,13 +36,19 @@ export default function HomeScreen() {
   const [timelinePredictions, setTimelinePredictions] = useState<
     TimelinePrediction[]
   >([]);
-  const [selectedRace, setSelectedRace] = useState<string>("");
   const [timelineLoading, setTimelineLoading] = useState(false);
 
   useEffect(() => {
     loadMyPredictions();
     loadTimelineData();
   }, []);
+
+  // Watch for race filter changes
+  useEffect(() => {
+    if (activeTab === "timeline") {
+      loadTimelineData(selectedRaceId ? String(selectedRaceId) : undefined);
+    }
+  }, [selectedRaceId]);
 
   // 俺の予想を読み込み
   const loadMyPredictions = async () => {
@@ -56,6 +57,12 @@ export default function HomeScreen() {
       const response = await client.get("/api/predictions/");
 
       if (Array.isArray(response.data)) {
+        // 🔍 My予想のAPIレスポンスを確認
+        console.log(
+          "My Predictions API Response:",
+          JSON.stringify(response.data, null, 2)
+        );
+
         setMyPredictions(response.data);
         console.log("✅ 予想一覧:", response.data.length, "件");
       } else {
@@ -85,6 +92,13 @@ export default function HomeScreen() {
         racePromise,
         predictionPromise,
       ]);
+
+      // 🔍 APIレスポンスを確認
+      console.log(
+        "Timeline API Response:",
+        JSON.stringify(predictionRes.data, null, 2)
+      );
+
       setRaces(raceRes.data);
       setTimelinePredictions(predictionRes.data);
     } catch (error) {
@@ -107,7 +121,7 @@ export default function HomeScreen() {
         style: "destructive",
         onPress: async () => {
           try {
-            await client.delete(`/predictions/${predictionId}/`);
+            await client.delete(`/api/predictions/${predictionId}/`);
             Alert.alert("Deleted", `${raceName}の予想を削除しました`);
             loadMyPredictions();
           } catch (error) {
@@ -136,60 +150,18 @@ export default function HomeScreen() {
     <View className="flex-1 bg-transparent px-4">
       <TabSwitch
         tabs={[
-          { key: "my", label: "My予想" },
           { key: "timeline", label: "TimeLine" },
+          { key: "my", label: "My予想" },
         ]}
         activeTab={activeTab}
         onTabChange={(key) => setActiveTab(key as TabType)}
       />
 
-      {/* My予想タブ */}
-      {activeTab === "my" && (
-        <ScrollView
-          className="flex-1"
-          contentContainerStyle={{ paddingBottom: 96 }}
-          refreshControl={
-            <RefreshControl refreshing={myRefreshing} onRefresh={onMyRefresh} />
-          }
-        >
-          {/* 予想一覧セクション */}
-          <View className="bg-transparent rounded-2xl shadow-lg">
-            {myPredictions.length > 0 ? (
-              myPredictions.map((prediction) => (
-                <View key={prediction.id} className="mb-1">
-                  <PredictionCard
-                    id={prediction.id}
-                    race={prediction.race}
-                    first_position={prediction.first_position}
-                    second_position={prediction.second_position}
-                    third_position={prediction.third_position}
-                    created_at={prediction.created_at}
-                    showDelete
-                    onDelete={handleDelete}
-                  />
-                </View>
-              ))
-            ) : (
-              // 空状態
-              <View className="items-center py-12">
-                <Text className="text-6xl mb-4">🏇</Text>
-                <Text className="text-xl font-bold text-text-primary mb-2">
-                  まだ予想がありません
-                </Text>
-                <Text className="text-sm text-text-secondary text-center px-8">
-                  予想を投稿してレースを楽しみましょう！
-                </Text>
-              </View>
-            )}
-          </View>
-        </ScrollView>
-      )}
-
       {/* タイムラインタブ */}
       {activeTab === "timeline" && (
         <View className="flex-1">
           {/* フィルター */}
-          <View className="bg-transparent rounded-2xl shadow-lg">
+          <View className="bg-transparent rounded-2xl shadow-lg mb-2">
             <RaceSelector
               races={races}
               selectedRaceId={selectedRaceId}
@@ -204,7 +176,11 @@ export default function HomeScreen() {
             refreshControl={
               <RefreshControl
                 refreshing={timelineLoading}
-                onRefresh={() => loadTimelineData(selectedRace || undefined)}
+                onRefresh={() =>
+                  loadTimelineData(
+                    selectedRaceId ? String(selectedRaceId) : undefined
+                  )
+                }
               />
             }
             contentContainerStyle={{ paddingBottom: 96 }}
@@ -213,9 +189,12 @@ export default function HomeScreen() {
                 <PredictionCard
                   id={item.id}
                   race_name={item.race_name}
+                  race_date={item.race_date}
+                  race_location={item.race_location}
                   first_position_name={item.first_position_name}
                   second_position_name={item.second_position_name}
                   third_position_name={item.third_position_name}
+                  comment={item.comment}
                   created_at={item.created_at}
                   user={item.user}
                   variant="others"
@@ -244,6 +223,50 @@ export default function HomeScreen() {
             }
           />
         </View>
+      )}
+
+      {/* My予想タブ */}
+      {activeTab === "my" && (
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{ paddingBottom: 96 }}
+          refreshControl={
+            <RefreshControl refreshing={myRefreshing} onRefresh={onMyRefresh} />
+          }
+        >
+          {/* 予想一覧セクション */}
+          <View className="bg-transparent rounded-2xl shadow-lg">
+            {myPredictions.length > 0 ? (
+              myPredictions.map((prediction) => (
+                <View key={prediction.id} className="mb-1">
+                  <PredictionCard
+                    id={prediction.id}
+                    race={prediction.race}
+                    first_position={prediction.first_position_detail}
+                    second_position={prediction.second_position_detail}
+                    third_position={prediction.third_position_detail}
+                    comment={prediction.comment}
+                    created_at={prediction.created_at}
+                    showDelete
+                    onDelete={handleDelete}
+                    variant="mine"
+                  />
+                </View>
+              ))
+            ) : (
+              // 空状態
+              <View className="items-center py-12">
+                <Text className="text-6xl mb-4">🏇</Text>
+                <Text className="text-xl font-bold text-text-primary mb-2">
+                  まだ予想がありません
+                </Text>
+                <Text className="text-sm text-text-secondary text-center px-8">
+                  予想を投稿してレースを楽しみましょう！
+                </Text>
+              </View>
+            )}
+          </View>
+        </ScrollView>
       )}
     </View>
   );

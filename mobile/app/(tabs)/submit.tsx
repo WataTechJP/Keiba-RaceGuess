@@ -1,6 +1,13 @@
 // app/(tabs)/submit.tsx
 import React, { useState, useEffect } from "react";
-import { View, ScrollView, Text, Alert, TouchableOpacity } from "react-native";
+import {
+  View,
+  ScrollView,
+  Text,
+  TextInput,
+  Alert,
+  TouchableOpacity,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { RaceSelector } from "../../src/components/prediction/RaceSelector";
@@ -8,16 +15,16 @@ import { HorseSelector } from "../../src/components/prediction/HorseSelector";
 import { Button } from "../../src/components/common/Button";
 import client from "../../src/api/client";
 import type { Race, Horse } from "../../src/types/prediction";
+import { white } from "react-native-paper/lib/typescript/styles/themes/v2/colors";
 
 function formatRemaining(ms: number) {
-  if (ms <= 0) return "投票締切済み";
+  if (ms <= 0) return "投票締切済み(発走済み）";
 
   const totalSec = Math.floor(ms / 1000);
   const h = Math.floor(totalSec / 3600);
   const m = Math.floor((totalSec % 3600) / 60);
   const s = totalSec % 60;
 
-  // 例: 5h 03m 09s
   return `残り${h}h ${String(m).padStart(2, "0")}m ${String(s).padStart(
     2,
     "0"
@@ -34,13 +41,19 @@ export default function SubmitPredictionScreen() {
   const [firstPosition, setFirstPosition] = useState<number | null>(null);
   const [secondPosition, setSecondPosition] = useState<number | null>(null);
   const [thirdPosition, setThirdPosition] = useState<number | null>(null);
+  const [comment, setComment] = useState("");
   const [loading, setLoading] = useState(false);
   const selectedRace = races.find(
     (r) => String(r.id) === String(selectedRaceId)
   );
   const deadline = selectedRace?.date ? new Date(selectedRace.date) : null;
 
-  const [now, setNow] = useState<Date>(new Date());
+  function getNowJST(): Date {
+    const now = new Date();
+    return new Date(now.getTime() + 17 * 60 * 60 * 1000);
+  }
+
+  const [now, setNow] = useState<Date>(getNowJST());
 
   // レース一覧を読み込み
   useEffect(() => {
@@ -50,7 +63,7 @@ export default function SubmitPredictionScreen() {
   useEffect(() => {
     if (!deadline) return;
 
-    const t = setInterval(() => setNow(new Date()), 1000);
+    const t = setInterval(() => setNow(getNowJST()), 1000);
     return () => clearInterval(t);
   }, [selectedRaceId, selectedRace?.date]);
 
@@ -74,6 +87,7 @@ export default function SubmitPredictionScreen() {
       const racesData = Array.isArray(response.data)
         ? response.data
         : response.data.results || [];
+      console.log("🔍 Races API Response:", JSON.stringify(racesData, null, 2));
       setRaces(racesData);
     } catch (error: any) {
       console.error("❌ レース読み込みエラー:", error);
@@ -99,6 +113,7 @@ export default function SubmitPredictionScreen() {
     setFirstPosition(null);
     setSecondPosition(null);
     setThirdPosition(null);
+    setComment("");
     setHorses([]);
   };
 
@@ -107,18 +122,16 @@ export default function SubmitPredictionScreen() {
       Alert.alert("エラー", "レースを選択してください");
       return;
     }
-    if (!firstPosition || !secondPosition || !thirdPosition) {
-      Alert.alert("エラー", "1着、2着、3着すべてを選択してください");
-      return;
-    }
 
     setLoading(true);
     try {
+      const trimmedComment = comment.trim();
       await client.post("/api/predictions/", {
         race: selectedRaceId,
         first_position: firstPosition,
         second_position: secondPosition,
         third_position: thirdPosition,
+        comment: trimmedComment,
       });
 
       // 投稿成功後にクリア
@@ -188,11 +201,11 @@ export default function SubmitPredictionScreen() {
 
         {/* 締切 & 残り時間 */}
         {deadline && (
-          <View className="mt-3 p-4 bg-white/20 rounded-xl">
+          <View className="mt-2 p-2 bg-white/20 rounded-xl">
             <Text className="text-sm text-accent-red font-semibold">
               締切時刻: {deadline.toLocaleString("ja-JP")}
             </Text>
-            <Text className="text-lg text-accent-red font-bold mt-1">
+            <Text className="text-lg text-accent-red font-bold">
               {formatRemaining(deadline.getTime() - now.getTime())}
             </Text>
           </View>
@@ -200,7 +213,7 @@ export default function SubmitPredictionScreen() {
 
         {/* 馬選択 */}
         {selectedRaceId && horses.length > 0 && (
-          <View className="mt-4">
+          <View className="mt-2">
             <HorseSelector
               label="1着"
               horses={horses}
@@ -209,7 +222,7 @@ export default function SubmitPredictionScreen() {
               disabledHorseIds={getDisabledHorseIds("first")}
             />
 
-            <View className="mt-3">
+            <View className="mt-1">
               <HorseSelector
                 label="2着"
                 horses={horses}
@@ -219,7 +232,7 @@ export default function SubmitPredictionScreen() {
               />
             </View>
 
-            <View className="mt-3">
+            <View className="mt-1">
               <HorseSelector
                 label="3着"
                 horses={horses}
@@ -227,6 +240,31 @@ export default function SubmitPredictionScreen() {
                 onHorseChange={setThirdPosition}
                 disabledHorseIds={getDisabledHorseIds("third")}
               />
+            </View>
+          </View>
+        )}
+
+        {selectedRaceId && (
+          <View className="mt-1">
+            <Text className="text-sm font-medium text-gray-700 mb-1">
+              コメント（20文字以内）
+            </Text>
+
+            <View className="border border-gray-300 rounded-xl bg-white px-4 py-3">
+              <TextInput
+                value={comment}
+                onChangeText={(t) => setComment(t.slice(0, 20))}
+                placeholder="例）がんばれ！"
+                placeholderTextColor="#9CA3AF"
+                editable={!loading && !isClosed}
+                maxLength={20}
+                className="text-base text-gray-900"
+              />
+              <View className="flex-row justify-end mt-1">
+                <Text className="text-xs text-gray-500">
+                  {comment.length}/20
+                </Text>
+              </View>
             </View>
           </View>
         )}
@@ -241,7 +279,7 @@ export default function SubmitPredictionScreen() {
         )}
 
         {/* 投稿ボタン */}
-        <View className="mt-6">
+        <View className="mt-4">
           <Button
             title={isClosed ? "CLOSED" : "POST"}
             onPress={handleSubmit}
@@ -255,13 +293,18 @@ export default function SubmitPredictionScreen() {
           />
         </View>
 
-        {/* 予想一覧へ */}
+        {/* 予想一覧 / 結果確認 */}
         <TouchableOpacity
-          onPress={() => router.push("/(tabs)")}
+          onPress={() => router.push(isClosed ? "/(tabs)/results" : "/(tabs)")}
           className="mt-4 items-center"
           activeOpacity={0.8}
         >
-          <Text className="text-sm text-white font-medium">→ 予想一覧へ</Text>
+          <View className="flex-row items-center gap-1">
+            <Ionicons name="arrow-forward" size={16} color="white" />
+            <Text className="text-base text-white font-medium">
+              {isClosed ? "My結果を確認" : "My予想一覧"}
+            </Text>
+          </View>
         </TouchableOpacity>
       </ScrollView>
     </View>
