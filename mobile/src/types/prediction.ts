@@ -1,7 +1,10 @@
+import type { User } from "@/types/user"
+
 export type Race = {
   id: number;
   name: string;
   date?: string;
+  location?: string;
 }
 
 export type Horse = {
@@ -19,31 +22,34 @@ export type PredictionFormData = {
 
 export type Prediction = {
   id: number;
-  race: {
-    id: number;
-    name: string;
-  };
-  first_position: {
-    id: number;
-    name: string;
-  };
-  second_position: {
-    id: number;
-    name: string;
-  };
-  third_position: {
-    id: number;
-    name: string;
-  };
+  race: Race;
+  race_name?: string;
+  race_date?: string;
+  race_location?: string;
+  first_position: number;  // ID
+  second_position: number;  // ID
+  third_position: number;  // ID
+  first_position_detail: Horse;  // ⭐ 追加
+  second_position_detail: Horse;  // ⭐ 追加
+  third_position_detail: Horse;  // ⭐ 追加
+  comment: string;
   created_at: string;
+  user?: {
+    id: number;
+    username: string;
+    email: string;
+  };
 };
 
 export type TimelinePrediction = {
   id: number;
   race_name: string;
+  race_date: string;
+  race_location: string;
   first_position_name: string;
   second_position_name: string;
   third_position_name: string;
+  comment: string;
   created_at: string;
   user: {
     id: number;
@@ -51,4 +57,25 @@ export type TimelinePrediction = {
     email: string;
     profile_image_url?: string;
   };
+};
+
+export type PredictionCardProps = {
+  id: number;
+  race?: Race;
+  race_name?: string;
+  race_date?: string;
+  race_location?: string;
+  first_position?: Horse;
+  first_position_name?: string;
+  second_position?: Horse;
+  second_position_name?: string;
+  third_position?: Horse;
+  third_position_name?: string;
+  comment?: string | null;
+  created_at: string;
+  user?: User;
+  showDelete?: boolean;
+  onDelete?: (id: number, raceName: string) => void;
+  onPress?: (id: number) => void;
+  variant?: "mine" | "others";
 };

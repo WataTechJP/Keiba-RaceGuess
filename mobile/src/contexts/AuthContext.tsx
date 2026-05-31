@@ -3,13 +3,13 @@ import React, { createContext, useState, useContext, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import client, { setAuthToken } from "../api/client";
 
-interface User {
+type User = {
   id: number;
   username: string;
   email: string;
-}
+};
 
-interface AuthContextType {
+type AuthContextType = {
   user: User | null;
   token: string | null;
   loading: boolean;
@@ -22,7 +22,7 @@ interface AuthContextType {
     password: string;
   }) => Promise<void>;
   logout: () => Promise<void>;
-}
+};
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 

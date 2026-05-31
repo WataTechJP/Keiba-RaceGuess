@@ -160,6 +160,12 @@ python manage.py migrate
 
 # スーパーユーザーを作成（管理画面用）
 python manage.py createsuperuser
+
+
+# 反映されたかを確認するには
+python manage.py showmigrations
+python manage.py sqlmigrate yourapp 000X
+
 ```
 
 ### 3. フロントエンド（モバイルアプリ）のセットアップ
@@ -186,19 +192,29 @@ cd ..
 ### バックエンドサーバーの起動
 
 ```bash
-# 仮想環境を有効化していることを確認
-source venv/bin/activate  # macOS/Linux
-# または
-# venv\Scripts\activate  # Windows
-
-# 開発サーバーを起動
-python manage.py runserver
-
-# 特定のポートで起動する場合
-python manage.py runserver 8000
+# プロジェクトルートで実行する
+cd ~/personal-projects/keiba_battle
 
 # すべてのネットワークインターフェースで起動（モバイルデバイスからアクセス可能）
-python manage.py runserver 0.0.0.0:8000
+./venv/bin/python manage.py runserver 0.0.0.0:8000
+
+# 特定のポートで起動する場合
+./venv/bin/python manage.py runserver 8000
+
+# venv の Python を直接指定して起動するのが確実
+./venv/bin/python manage.py runserver
+```
+
+`source venv/bin/activate` を使う場合は、起動前に Python の場所を確認してください。
+
+```bash
+source venv/bin/activate  # macOS/Linux
+which python
+
+# OK: /Users/macow/personal-projects/keiba_battle/venv/bin/python
+# NG: /Users/macow/.pyenv/shims/python など
+
+python manage.py runserver
 ```
 
 サーバーが起動すると、以下のURLでアクセスできます：

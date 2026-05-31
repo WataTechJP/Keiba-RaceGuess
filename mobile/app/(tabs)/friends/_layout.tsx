@@ -26,6 +26,12 @@ export default function FriendsLayout() {
           title: "VIPルーム",
         }}
       />
+      <Stack.Screen
+        name="[userId]"
+        options={{
+          title: "フレンドの予想",
+        }}
+      />
     </Stack>
   );
 }

@@ -6,14 +6,6 @@ export type User = {
   profile_image_url?: string;
 }
 
-export type UserProfile = {
-  id: number;
-  user: User;
-  profile_image: string | null;
-  profile_image_url: string | null;
-  updated_at: string;
-}
-
 // タイムラインなどで使う簡易版
 export type UserBasic = {
   username: string;
@@ -21,7 +13,7 @@ export type UserBasic = {
 }
 
 // プロフィール画面で使う詳細版
-export type UserDetail = {
+export type UserProfile = {
   id: number;
   username: string;
   email: string;
@@ -29,7 +21,7 @@ export type UserDetail = {
     profile_image_url: string | null;
     updated_at: string;
   };
-  // 統計情報
+  date_joined: string;
   predictions_count?: number;
   hit_rate?: number;
   points?: number;

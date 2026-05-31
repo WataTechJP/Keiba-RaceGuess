@@ -2,7 +2,6 @@ import { Redirect, Tabs, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import {
   ActivityIndicator,
-  Text as RNText,
   View,
   Modal,
   TouchableOpacity,
@@ -11,6 +10,7 @@ import {
 } from "react-native";
 import { useState } from "react";
 import { useAuth } from "../../src/contexts/AuthContext";
+import { BottomTabBarButtonProps } from "@react-navigation/bottom-tabs";
 
 export default function TabsLayout() {
   const { isAuthenticated, loading } = useAuth();
@@ -29,12 +29,15 @@ export default function TabsLayout() {
     return <Redirect href="/(auth)/login" />;
   }
 
+  const IconSize = 28;
+
   return (
     <>
       <Tabs
         screenOptions={{
           tabBarActiveTintColor: "#8D6E63",
           tabBarInactiveTintColor: "#166534",
+          tabBarShowLabel: false,
           headerShown: true,
           headerTintColor: "#fff",
           headerStyle: {
@@ -50,9 +53,9 @@ export default function TabsLayout() {
             backgroundColor: "#4CAF50",
             borderTopWidth: 1,
             elevation: 0,
-            paddingBottom: 8,
-            paddingTop: 8,
-            height: 80,
+            height: 64,
+            paddingTop: 6,
+            paddingBottom: 18,
           },
         }}
       >
@@ -61,44 +64,11 @@ export default function TabsLayout() {
           name="index"
           options={{
             title: "ホーム",
-            tabBarIcon: ({ size, color }) => (
-              <Ionicons name="home" size={size} color={color} />
-            ),
-            tabBarLabel: ({ focused }) => (
-              <RNText
-                style={{
-                  fontSize: 11,
-                  fontWeight: "600",
-                  color: focused ? "#8D6E63" : "#fff",
-                }}
-              >
-                ホーム
-              </RNText>
+            tabBarIcon: ({ color }) => (
+              <Ionicons name="home" size={IconSize} color={color} />
             ),
           }}
         />
-
-        {/* 予想一覧
-        <Tabs.Screen
-          name="predictions"
-          options={{
-            title: "予想一覧",
-            tabBarIcon: ({ size, color }) => (
-              <Ionicons name="list" size={size} color={color} />
-            ),
-            tabBarLabel: ({ focused }) => (
-              <RNText
-                style={{
-                  fontSize: 11,
-                  fontWeight: "600",
-                  color: focused ? "#8D6E63" : "#fff",
-                }}
-              >
-                予想一覧
-              </RNText>
-            ),
-          }}
-        /> */}
 
         {/* フレンド（長押し対応） - 修正版 */}
         <Tabs.Screen
@@ -106,37 +76,25 @@ export default function TabsLayout() {
           options={{
             title: "フレンド",
             headerShown: false,
-            tabBarButton: ({
-              children,
-              onPress,
-              accessibilityState,
-              ...props
-            }) => (
-              <TouchableOpacity
-                onPress={onPress}
-                onLongPress={() => setShowFriendsMenu(true)}
-                style={{
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-                activeOpacity={0.7}
-              >
-                {children}
-              </TouchableOpacity>
-            ),
-            tabBarIcon: ({ size, color }) => (
-              <Ionicons name="people" size={size} color={color} />
-            ),
-            tabBarLabel: ({ focused }) => (
-              <RNText
-                style={{
-                  fontSize: 11,
-                  fontWeight: "600",
-                  color: focused ? "#8D6E63" : "#fff",
-                }}
-              >
-                フレンド
-              </RNText>
+            tabBarButton: (props: BottomTabBarButtonProps) => {
+              const { ref, ...rest } = props as any;
+              return (
+                <Pressable
+                  {...rest}
+                  onLongPress={() => setShowFriendsMenu(true)}
+                  style={[
+                    rest.style,
+                    {
+                      justifyContent: "center",
+                      alignItems: "center",
+                    },
+                  ]}
+                />
+              );
+            },
+
+            tabBarIcon: ({ color }) => (
+              <Ionicons name="people" size={IconSize} color={color} />
             ),
           }}
         />
@@ -146,19 +104,8 @@ export default function TabsLayout() {
           name="submit"
           options={{
             title: "投稿",
-            tabBarIcon: ({ size, color }) => (
-              <Ionicons name="add-circle" size={size} color={color} />
-            ),
-            tabBarLabel: ({ focused }) => (
-              <RNText
-                style={{
-                  fontSize: 11,
-                  fontWeight: "600",
-                  color: focused ? "#8D6E63" : "#fff",
-                }}
-              >
-                投稿
-              </RNText>
+            tabBarIcon: ({ color }) => (
+              <Ionicons name="add-circle" size={IconSize} color={color} />
             ),
           }}
         />
@@ -168,19 +115,8 @@ export default function TabsLayout() {
           name="results"
           options={{
             title: "結果・ランキング",
-            tabBarIcon: ({ size, color }) => (
-              <Ionicons name="trophy" size={size} color={color} />
-            ),
-            tabBarLabel: ({ focused }) => (
-              <RNText
-                style={{
-                  fontSize: 11,
-                  fontWeight: "600",
-                  color: focused ? "#8D6E63" : "#fff",
-                }}
-              >
-                結果
-              </RNText>
+            tabBarIcon: ({ color }) => (
+              <Ionicons name="trophy" size={IconSize} color={color} />
             ),
           }}
         />
@@ -189,20 +125,9 @@ export default function TabsLayout() {
         <Tabs.Screen
           name="profile"
           options={{
-            title: "アカウント",
+            title: "マイページ",
             tabBarIcon: ({ size, color }) => (
-              <Ionicons name="person" size={size} color={color} />
-            ),
-            tabBarLabel: ({ focused }) => (
-              <RNText
-                style={{
-                  fontSize: 11,
-                  fontWeight: "600",
-                  color: focused ? "#8D6E63" : "#fff",
-                }}
-              >
-                アカウント
-              </RNText>
+              <Ionicons name="person" size={IconSize} color={color} />
             ),
           }}
         />

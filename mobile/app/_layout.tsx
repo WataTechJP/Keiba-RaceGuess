@@ -1,5 +1,7 @@
 import { Slot } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import Toast from "react-native-toast-message";
+import { SuccessToast, ErrorToast } from "@/components/common/CustomToast";
 import { AuthProvider } from "../src/contexts/AuthContext";
 import { AppBackground } from "../src/components/AppBackground";
 
@@ -14,6 +16,11 @@ const TransparentTheme = {
   },
 };
 
+const toastConfig = {
+  success: (props: any) => <SuccessToast {...props} />,
+  error: (props: any) => <ErrorToast {...props} />,
+};
+
 export default function RootLayout() {
   return (
     <AuthProvider>
@@ -23,6 +30,7 @@ export default function RootLayout() {
         </ThemeProvider>
       </AppBackground>
       <StatusBar style="dark" />
+      <Toast config={toastConfig} />
     </AuthProvider>
   );
 }

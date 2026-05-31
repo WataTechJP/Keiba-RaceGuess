@@ -42,8 +42,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 class HorseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Horse
-        fields = ("id", "name", "race")
-        read_only_fields = ("id", "race")
+        fields = ("id", "name")
+        read_only_fields = ("id")
 
 
 class RaceSerializer(serializers.ModelSerializer):
@@ -51,15 +51,20 @@ class RaceSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Race
-        fields = ("id", "name", "horses")
+        fields = ("id", "name", "date", "location", "horses")
 
 
 class PredictionSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
+    race = RaceSerializer(read_only=True) 
     race_name = serializers.CharField(source="race.name", read_only=True)
+    race_date = serializers.CharField(source="race.date", read_only=True)        # ⭐ 追加
+    race_location = serializers.CharField(source="race.location", read_only=True) # ⭐ 追加
     first_position_detail = HorseSerializer(source="first_position", read_only=True)
     second_position_detail = HorseSerializer(source="second_position", read_only=True)
     third_position_detail = HorseSerializer(source="third_position", read_only=True)
+    comment = serializers.CharField(required=False, allow_blank=True, allow_null=True, max_length=20,)
+
 
     class Meta:
         model = Prediction
@@ -67,9 +72,12 @@ class PredictionSerializer(serializers.ModelSerializer):
             "id",
             "race",
             "race_name",
+            "race_date",
+            "race_location",
             "first_position",
             "second_position",
             "third_position",
+            "comment",
             "first_position_detail",
             "second_position_detail",
             "third_position_detail",
@@ -78,6 +86,31 @@ class PredictionSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ("id", "created_at", "user")
 
+class PredictionCreateSerializer(serializers.ModelSerializer):
+    comment = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        max_length=20,
+        default="",
+        trim_whitespace=False  # Don't strip whitespace automatically
+    )
+
+    class Meta:
+        model = Prediction
+        fields = (
+            "race",
+            "first_position",
+            "second_position",
+            "third_position",
+            "comment",
+        )
+
+    def to_internal_value(self, data):
+        # Custom handling to ensure comment is never None
+        if 'comment' in data and data['comment'] is None:
+            data = data.copy()
+            data['comment'] = ''
+        return super().to_internal_value(data)
 
 class UserProfileSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
@@ -115,11 +148,15 @@ class FollowSerializer(serializers.ModelSerializer):
 
 class PredictionGroupSerializer(serializers.ModelSerializer):
     members = UserSerializer(many=True, read_only=True)
+    member_count = serializers.SerializerMethodField()
 
     class Meta:
         model = PredictionGroup
-        fields = ("id", "name", "members")
+        fields = ("id", "name", "members", "member_count")
         read_only_fields = ("id",)
+
+    def get_member_count(self, obj):
+        return obj.members.count()
 
 
 class GroupMessageSerializer(serializers.ModelSerializer):
@@ -175,15 +212,12 @@ class UserPointSerializer(serializers.ModelSerializer):
 
 class TimelinePredictionSerializer(serializers.ModelSerializer):
     race_name = serializers.CharField(source="race.name", read_only=True)
-    first_position_name = serializers.CharField(
-        source="first_position.name", read_only=True
-    )
-    second_position_name = serializers.CharField(
-        source="second_position.name", read_only=True
-    )
-    third_position_name = serializers.CharField(
-        source="third_position.name", read_only=True
-    )
+    race_date = serializers.CharField(source="race.date", read_only=True)        # ⭐ 追加
+    race_location = serializers.CharField(source="race.location", read_only=True) # ⭐ 追加
+    first_position_name = serializers.CharField(source="first_position.name", read_only=True)
+    second_position_name = serializers.CharField(source="second_position.name", read_only=True)
+    third_position_name = serializers.CharField(source="third_position.name", read_only=True)
+    comment = serializers.CharField(required=False, allow_blank=True, allow_null=True, max_length=20,)
     user = serializers.SerializerMethodField()
 
     class Meta:
@@ -191,9 +225,12 @@ class TimelinePredictionSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "race_name",
+            "race_date",        # ⭐ 追加
+            "race_location",    # ⭐ 追加
             "first_position_name",
             "second_position_name",
             "third_position_name",
+            "comment",
             "created_at",
             "user",
         )
