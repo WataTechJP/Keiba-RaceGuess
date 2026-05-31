@@ -1,4 +1,4 @@
-export type TabType = "my" | "points" | "hit_rate";
+export type TabType = "my" | "race_results" | "points" | "hit_rate";
 
 export type RaceResult = {
   id: number;
@@ -12,6 +12,18 @@ export type RaceResult = {
   actual_2: string;
   actual_3: string;
   score: number;
+}
+
+export type RaceResultSummary = {
+  id: number;
+  race_name: string;
+  race_location?: string | null;
+  race_date?: string | null;
+  status: "reflected" | "pending";
+  actual_1?: string | null;
+  actual_2?: string | null;
+  actual_3?: string | null;
+  updated_at?: string | null;
 }
 
 export type UserPoint = {

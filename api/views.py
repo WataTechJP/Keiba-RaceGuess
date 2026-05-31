@@ -372,11 +372,11 @@ def results_list(request):
             results.append({
                 'id': prediction.id,
                 'race_name': prediction.race.name,
-                'race_date': prediction.race.date.isoformat(),
+                'race_date': prediction.race.date.isoformat() if prediction.race.date else None,
                 'race_location': prediction.race.location,
-                'predicted_1': prediction.first_position.name,
-                'predicted_2': prediction.second_position.name,
-                'predicted_3': prediction.third_position.name,
+                'predicted_1': prediction.first_position.name if prediction.first_position else '-',
+                'predicted_2': prediction.second_position.name if prediction.second_position else '-',
+                'predicted_3': prediction.third_position.name if prediction.third_position else '-',
                 'actual_1': race_result.first_place.name,
                 'actual_2': race_result.second_place.name,
                 'actual_3': race_result.third_place.name,
@@ -388,6 +388,42 @@ def results_list(request):
             continue
     
     return Response(results)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def race_results_list(request):
+    """全レースの結果一覧を取得。未反映のレースも返す。"""
+    races = Race.objects.prefetch_related("horses").order_by("id")
+    race_results = {
+        result.race_id: result
+        for result in RaceResult.objects.select_related(
+            "race", "first_place", "second_place", "third_place"
+        )
+    }
+
+    data = []
+    for race in races:
+        result = race_results.get(race.id)
+        is_reflected = bool(
+            result
+            and result.first_place_id
+            and result.second_place_id
+            and result.third_place_id
+        )
+
+        data.append({
+            "id": race.id,
+            "race_name": race.name,
+            "race_date": race.date.isoformat() if race.date else None,
+            "race_location": race.location,
+            "status": "reflected" if is_reflected else "pending",
+            "actual_1": result.first_place.name if result and result.first_place else None,
+            "actual_2": result.second_place.name if result and result.second_place else None,
+            "actual_3": result.third_place.name if result and result.third_place else None,
+            "updated_at": result.updated_at.isoformat() if result else None,
+        })
+
+    return Response(data)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

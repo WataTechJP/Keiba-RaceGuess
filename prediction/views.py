@@ -315,24 +315,44 @@ def predictions_api(request):
         second_position_id = request.data.get('second_position')
         third_position_id = request.data.get('third_position')
         comment = request.data.get('comment', '')  # ✅ Get comment from request
+        horse_ids = [
+            horse_id
+            for horse_id in [first_position_id, second_position_id, third_position_id]
+            if horse_id
+        ]
 
-        if not all([race_id, first_position_id, second_position_id, third_position_id]):
+        if not race_id:
             return Response(
-                {'error': 'すべてのフィールドを入力してください'},
+                {'error': 'レースを選択してください'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not horse_ids:
+            return Response(
+                {'error': '1着〜3着のうち、少なくとも1頭は選んでください'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if len(horse_ids) != len(set(horse_ids)):
+            return Response(
+                {'error': '同じ馬を複数回選択できません'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
         try:
             race = Race.objects.get(id=race_id)
-            first_position = Horse.objects.get(id=first_position_id)
-            second_position = Horse.objects.get(id=second_position_id)
-            third_position = Horse.objects.get(id=third_position_id)
-
-            if len({first_position_id, second_position_id, third_position_id}) != 3:
-                return Response(
-                    {'error': '同じ馬を複数回選択できません'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+            first_position = (
+                Horse.objects.get(id=first_position_id, race=race)
+                if first_position_id else None
+            )
+            second_position = (
+                Horse.objects.get(id=second_position_id, race=race)
+                if second_position_id else None
+            )
+            third_position = (
+                Horse.objects.get(id=third_position_id, race=race)
+                if third_position_id else None
+            )
 
             prediction = Prediction.objects.create(
                 user=request.user,
@@ -352,7 +372,7 @@ def predictions_api(request):
         except Race.DoesNotExist:
             return Response({'error': 'レースが見つかりません'}, status=status.HTTP_404_NOT_FOUND)
         except Horse.DoesNotExist:
-            return Response({'error': '馬が見つかりません'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'error': '選んだ馬がレースと一致しません'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['DELETE'])
