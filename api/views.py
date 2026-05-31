@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from django.db.models import Prefetch
 from rest_framework import generics, permissions, viewsets
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.decorators import action, api_view, permission_classes
@@ -128,6 +128,51 @@ class PredictionViewSet(viewsets.ModelViewSet):
             queryset, many=True, context={"request": request}
         )
         return Response(serializer.data)
+
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path=r"user/(?P<user_id>\d+)",
+        permission_classes=[permissions.IsAuthenticated],
+    )
+    def user_predictions(self, request, user_id=None):
+        try:
+            target_user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            raise NotFound("ユーザーが見つかりません。")
+
+        is_self = target_user.id == request.user.id
+        is_following = request.user.following.filter(followed=target_user).exists()
+        if not (is_self or is_following):
+            raise PermissionDenied("フォロー中のユーザーの予想のみ閲覧できます。")
+
+        queryset = (
+            Prediction.objects.filter(user=target_user)
+            .select_related(
+                "race",
+                "first_position",
+                "second_position",
+                "third_position",
+                "user",
+                "user__userprofile",
+            )
+            .order_by("-created_at")
+        )
+
+        serializer = TimelinePredictionSerializer(
+            queryset, many=True, context={"request": request}
+        )
+        return Response(
+            {
+                "user": {
+                    "id": target_user.id,
+                    "username": target_user.username,
+                    "email": target_user.email,
+                },
+                "predictions": serializer.data,
+                "count": queryset.count(),
+            }
+        )
 
 
 class FollowViewSet(viewsets.ModelViewSet):

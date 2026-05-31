@@ -198,9 +198,9 @@ export default function PredictionCard({
           </View>
         </View>
         {comment ? (
-          <View>
-            <Text>
+          <View className="flex-row items-center mt-1">
               <Ionicons name="chatbubble-ellipses" size={20} color="#b9b9b9" />
+            <Text className="ml-2 flex-1 text-text-primary">
               {comment}
             </Text>
           </View>

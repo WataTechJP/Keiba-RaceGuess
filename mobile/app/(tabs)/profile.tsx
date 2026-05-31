@@ -107,7 +107,7 @@ export default function ProfileScreen() {
 
   // ✅ 正しいパスを使用
   const profileImageUri = getProfileImageUrl(
-    profile?.profile?.profile_image_url
+    profile?.profile?.profile_image_url,
   );
 
   if (loading) {
@@ -138,7 +138,7 @@ export default function ProfileScreen() {
               onError={(error) => {
                 console.error(
                   "❌ 画像読み込みエラー:",
-                  error.nativeEvent.error
+                  error.nativeEvent.error,
                 );
               }}
             />
@@ -231,13 +231,6 @@ export default function ProfileScreen() {
             </Text>
             <Ionicons name="chevron-forward" size={24} color="#9ca3af" />
           </TouchableOpacity>
-
-          <TouchableOpacity className="flex-row items-center py-4 px-5 border-b border-gray-100">
-            <Ionicons name="settings-outline" size={24} color="#374151" />
-            <Text className="flex-1 text-base text-gray-700 ml-4">設定</Text>
-            <Ionicons name="chevron-forward" size={24} color="#9ca3af" />
-          </TouchableOpacity>
-
           <TouchableOpacity className="flex-row items-center py-4 px-5 border-b border-gray-100">
             <Ionicons name="notifications-outline" size={24} color="#374151" />
             <Text className="flex-1 text-base text-gray-700 ml-4">

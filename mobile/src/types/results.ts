@@ -3,8 +3,8 @@ export type TabType = "my" | "race_results" | "points" | "hit_rate";
 export type RaceResult = {
   id: number;
   race_name: string;
-  race_location: string;
-  race_date: string;
+  race_location?: string | null;
+  race_date?: string | null;
   predicted_1: string;
   predicted_2: string;
   predicted_3: string;

@@ -130,8 +130,8 @@ export default function ResultsScreen() {
       {/* タブ切り替え */}
       <TabSwitch
         tabs={[
-          { key: "my", label: "My結果" },
           { key: "race_results", label: "レース結果" },
+          { key: "my", label: "My結果" },
           { key: "points", label: "ポイント" },
           { key: "hit_rate", label: "的中率" },
         ]}
@@ -189,82 +189,91 @@ export default function ResultsScreen() {
 
           {/* 結果リスト */}
           {results.length > 0 ? (
-            results.map((result) => (
-              <View
-                key={result.id}
-                className="bg-white rounded-xl p-2 mb-1 shadow-sm"
-              >
-                {/* ヘッダー */}
-                <View className="flex-row justify-between items-start mb-1">
-                  <View className="flex-col items-baseline">
-                    <Text className="text-lg font-bold text-gray-800 mr-3">
-                      {result.race_name}
-                    </Text>
-                    <View className="flex-row">
-                      <Text className="text-xs text-gray-500 mr-2">
-                        {result.race_location}
+            results.map((result) => {
+              const raceDate = result.race_date
+                ? new Date(result.race_date).toLocaleDateString("ja-JP", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })
+                : null;
+
+              return (
+                <View
+                  key={result.id}
+                  className="bg-white rounded-xl p-2 mb-1 shadow-sm"
+                >
+                  {/* ヘッダー */}
+                  <View className="flex-row justify-between items-start mb-1">
+                    <View className="flex-col items-baseline">
+                      <Text className="text-lg font-bold text-gray-800 mr-3">
+                        {result.race_name}
                       </Text>
-                      <Text className="text-xs text-gray-500">
-                        {new Date(result.race_date).toLocaleDateString(
-                          "ja-JP",
-                          {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          },
+                      <View className="flex-row">
+                        {result.race_location && (
+                          <Text className="text-xs text-gray-500 mr-2">
+                            {result.race_location}
+                          </Text>
                         )}
-                      </Text>
+                        {raceDate && (
+                          <Text className="text-xs text-gray-500">
+                            {raceDate}
+                          </Text>
+                        )}
+                      </View>
                     </View>
-                  </View>
-                  <View className="bg-emerald-100 px-3 py-1 flex-row items-baseline rounded-full">
-                    <Ionicons name="medal" size={20} color="#fbbf24" />
-                    <Text className="text-sm font-bold ml-2 text-text-primary">
-                      {result.score}
-                    </Text>
-                    <Text className="ml-1 text-xs text-text-secondary">pt</Text>
-                  </View>
-                </View>
-
-                {/* 予想と結果 */}
-                <View className="flex-row gap-2">
-                  {/* あなたの予想 */}
-                  <View className="flex-1 bg-blue-50 rounded-xl p-3">
-                    <Text className="text-xs font-semibold text-blue-600 mb-1">
-                      予想
-                    </Text>
-                    <View className="space-y-1">
-                      <Text className="text-sm text-text-primary">
-                        1着: {result.predicted_1}
+                    <View className="bg-emerald-100 px-3 py-1 flex-row items-baseline rounded-full">
+                      <Ionicons name="medal" size={20} color="#fbbf24" />
+                      <Text className="text-sm font-bold ml-2 text-text-primary">
+                        {result.score}
                       </Text>
-                      <Text className="text-sm text-text-primary">
-                        2着: {result.predicted_2}
-                      </Text>
-                      <Text className="text-sm text-text-primary">
-                        3着: {result.predicted_3}
+                      <Text className="ml-1 text-xs text-text-secondary">
+                        pt
                       </Text>
                     </View>
                   </View>
 
-                  {/* 結果 */}
-                  <View className="flex-1 bg-emerald-50 rounded-xl p-3">
-                    <Text className="text-xs font-semibold text-emerald-600 mb-1">
-                      結果
-                    </Text>
-                    <View className="space-y-1">
-                      <Text className="text-sm text-text-primary">
-                        1着: {result.actual_1}
+                  {/* 予想と結果 */}
+                  <View className="flex-row gap-2">
+                    {/* あなたの予想 */}
+                    <View className="flex-1 bg-blue-50 rounded-xl p-3">
+                      <Text className="text-xs font-semibold text-blue-600 mb-1">
+                        予想
                       </Text>
-                      <Text className="text-sm text-text-primary">
-                        2着: {result.actual_2}
+                      <View className="space-y-1">
+                        <Text className="text-sm text-text-primary">
+                          1着: {result.predicted_1}
+                        </Text>
+                        <Text className="text-sm text-text-primary">
+                          2着: {result.predicted_2}
+                        </Text>
+                        <Text className="text-sm text-text-primary">
+                          3着: {result.predicted_3}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* 結果 */}
+                    <View className="flex-1 bg-emerald-50 rounded-xl p-3">
+                      <Text className="text-xs font-semibold text-emerald-600 mb-1">
+                        結果
                       </Text>
-                      <Text className="text-sm text-text-primary">
-                        3着: {result.actual_3}
-                      </Text>
+                      <View className="space-y-1">
+                        <Text className="text-sm text-text-primary">
+                          1着: {result.actual_1}
+                        </Text>
+                        <Text className="text-sm text-text-primary">
+                          2着: {result.actual_2}
+                        </Text>
+                        <Text className="text-sm text-text-primary">
+                          3着: {result.actual_3}
+                        </Text>
+                      </View>
                     </View>
                   </View>
                 </View>
-              </View>
-            ))
+              );
+            })
           ) : (
             // 空状態
             <View className="bg-white rounded-2xl p-8 items-center shadow-sm">

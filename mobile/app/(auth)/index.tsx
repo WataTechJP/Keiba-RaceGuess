@@ -77,12 +77,12 @@ export default function HomeTabScreen() {
           {/* NOTE: LinkにclassNameを当てる想定。効かない場合はPressable+routerにしてね */}
           <Pressable
             onPress={() => router.replace("/(auth)/login")}
-            className="py-2 px-2"
+            className="py-2 px-2 flex-row items-center gap-1"
           >
-            <Text className="text-white font-semibold ">
+            <Text className="text-white font-semibold">
               新規登録・ログインはこちら
-              <Ionicons name="play" size={24} color="#dd0b0b" />
             </Text>
+            <Ionicons name="play" size={14} color="#dd0b0b" />
           </Pressable>
         </View>
       </View>

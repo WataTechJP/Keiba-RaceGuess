@@ -8,6 +8,8 @@ from django.contrib.auth import login
 from .forms import SignUpForm, GroupMessageForm, SelectMyPredictionForm, UserProfileForm, PredictionForm, UserProfileForm
 from .utils import evaluate_predictions
 from django.contrib.admin.views.decorators import staff_member_required
+from datetime import timedelta
+from django.utils import timezone
 
 from django.db.models import Q
 from rest_framework.decorators import api_view
@@ -341,6 +343,15 @@ def predictions_api(request):
 
         try:
             race = Race.objects.get(id=race_id)
+            if race.date:
+                deadline = race.date - timedelta(minutes=1)
+                now = timezone.now()
+                if now >= deadline:
+                    return Response(
+                        {'error': 'このレースの投稿締切を過ぎています'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
             first_position = (
                 Horse.objects.get(id=first_position_id, race=race)
                 if first_position_id else None

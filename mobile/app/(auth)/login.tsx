@@ -103,7 +103,7 @@ export default function LoginPage() {
               <Text className="text-sm font-medium text-gray-700 mb-2">
                 パスワード
               </Text>
-              <View className="relative">
+              <View className="flex-row items-center border border-gray-300 rounded-xl bg-white">
                 <TextInput
                   placeholder="パスワードを入力"
                   secureTextEntry={!showPassword}
@@ -112,12 +112,12 @@ export default function LoginPage() {
                   editable={!loading}
                   textContentType="password"
                   autoComplete="password"
-                  className="border border-gray-300 rounded-xl px-4 py-3.5 pr-12 text-base bg-white"
+                  className="flex-1 px-4 py-3.5 text-base"
                   placeholderTextColor="#9CA3AF"
                 />
                 <TouchableOpacity
                   onPress={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-3.5"
+                  className="px-4 py-3.5"
                   disabled={loading}
                 >
                   <Ionicons

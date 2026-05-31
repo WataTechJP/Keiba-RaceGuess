@@ -15,20 +15,23 @@ import { HorseSelector } from "../../src/components/prediction/HorseSelector";
 import { Button } from "../../src/components/common/Button";
 import client from "../../src/api/client";
 import type { Race, Horse } from "../../src/types/prediction";
-import { white } from "react-native-paper/lib/typescript/styles/themes/v2/colors";
+
+const POST_DEADLINE_OFFSET_MS = 60 * 1000;
 
 function formatRemaining(ms: number) {
-  if (ms <= 0) return "投票締切済み(発走済み）";
+  if (ms <= 0) return "投票締切済み";
 
   const totalSec = Math.floor(ms / 1000);
-  const h = Math.floor(totalSec / 3600);
+  const d = Math.floor(totalSec / 86400);
+  const h = Math.floor((totalSec % 86400) / 3600);
   const m = Math.floor((totalSec % 3600) / 60);
   const s = totalSec % 60;
 
-  return `残り${h}h ${String(m).padStart(2, "0")}m ${String(s).padStart(
-    2,
-    "0"
-  )}s`;
+  if (d > 0) {
+    return `残り ${d}日 ${h}時間 ${m}分 ${s}秒`;
+  }
+
+  return `残り ${h}時間 ${m}分 ${s}秒`;
 }
 
 export default function SubmitPredictionScreen() {
@@ -46,14 +49,12 @@ export default function SubmitPredictionScreen() {
   const selectedRace = races.find(
     (r) => String(r.id) === String(selectedRaceId)
   );
-  const deadline = selectedRace?.date ? new Date(selectedRace.date) : null;
+  const raceStartAt = selectedRace?.date ? new Date(selectedRace.date) : null;
+  const deadline = raceStartAt
+    ? new Date(raceStartAt.getTime() - POST_DEADLINE_OFFSET_MS)
+    : null;
 
-  function getNowJST(): Date {
-    const now = new Date();
-    return new Date(now.getTime() + 17 * 60 * 60 * 1000);
-  }
-
-  const [now, setNow] = useState<Date>(getNowJST());
+  const [now, setNow] = useState<Date>(new Date());
 
   // レース一覧を読み込み
   useEffect(() => {
@@ -63,7 +64,7 @@ export default function SubmitPredictionScreen() {
   useEffect(() => {
     if (!deadline) return;
 
-    const t = setInterval(() => setNow(getNowJST()), 1000);
+    const t = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(t);
   }, [selectedRaceId, selectedRace?.date]);
 
@@ -120,6 +121,11 @@ export default function SubmitPredictionScreen() {
   const handleSubmit = async () => {
     if (!selectedRaceId) {
       Alert.alert("エラー", "レースを選択してください");
+      return;
+    }
+
+    if (isClosed) {
+      Alert.alert("エラー", "このレースの投稿締切を過ぎています");
       return;
     }
 
@@ -196,6 +202,7 @@ export default function SubmitPredictionScreen() {
         <RaceSelector
           races={races}
           selectedRaceId={selectedRaceId}
+          now={now}
           onRaceChange={setSelectedRaceId}
         />
 
@@ -205,6 +212,11 @@ export default function SubmitPredictionScreen() {
             <Text className="text-sm text-accent-red font-semibold">
               締切時刻: {deadline.toLocaleString("ja-JP")}
             </Text>
+            {raceStartAt && (
+              <Text className="text-xs text-gray-600">
+                発走時刻: {raceStartAt.toLocaleString("ja-JP")}
+              </Text>
+            )}
             <Text className="text-lg text-accent-red font-bold">
               {formatRemaining(deadline.getTime() - now.getTime())}
             </Text>

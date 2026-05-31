@@ -32,6 +32,7 @@ export default function HomeScreen() {
   // タイムライン
   const [races, setRaces] = useState<Race[]>([]);
   const [selectedRaceId, setSelectedRaceId] = useState<number | null>(null);
+  const [now, setNow] = useState<Date>(new Date());
 
   const [timelinePredictions, setTimelinePredictions] = useState<
     TimelinePrediction[]
@@ -41,6 +42,11 @@ export default function HomeScreen() {
   useEffect(() => {
     loadMyPredictions();
     loadTimelineData();
+  }, []);
+
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 60 * 1000);
+    return () => clearInterval(t);
   }, []);
 
   // Watch for race filter changes
@@ -165,6 +171,8 @@ export default function HomeScreen() {
             <RaceSelector
               races={races}
               selectedRaceId={selectedRaceId}
+              now={now}
+              disableClosedRaces={false}
               onRaceChange={setSelectedRaceId}
             />
           </View>
